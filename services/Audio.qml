@@ -82,15 +82,19 @@ Singleton {
     }
 
     function incrementVolume() {
-        const currentVolume = Audio.value;
-        const step = currentVolume < 0.1 ? 0.01 : 0.02 || 0.2;
-        Audio.sink.audio.volume = Math.min(1, Audio.sink.audio.volume + step);
+        if (!root.sink?.audio) return;
+        const currentVolume = root.sink.audio.volume;
+        const step = currentVolume < 0.1 ? 0.01 : 0.02;
+        const maxAllowed = (Config.options?.audio?.protection?.maxAllowed ?? 100) / 100;
+        const newVolume = Math.min(Math.min(maxAllowed, root.hardMaxValue), currentVolume + step);
+        root.sink.audio.volume = newVolume;
     }
     
     function decrementVolume() {
-        const currentVolume = Audio.value;
-        const step = currentVolume < 0.1 ? 0.01 : 0.02 || 0.2;
-        Audio.sink.audio.volume -= step;
+        if (!root.sink?.audio) return;
+        const currentVolume = root.sink.audio.volume;
+        const step = currentVolume <= 0.1 ? 0.01 : 0.02;
+        root.sink.audio.volume = Math.max(0, currentVolume - step);
     }
 
     function setDefaultSink(node) {
