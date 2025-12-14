@@ -16,6 +16,7 @@ source ./sdata/lib/migrations.sh
 source ./sdata/lib/versioning.sh
 source ./sdata/lib/robust-update.sh
 source ./sdata/lib/doctor.sh
+source ./sdata/lib/snapshots.sh
 
 prevent_sudo_or_root
 
@@ -37,8 +38,9 @@ Usage: ./setup [command] [options]
 Commands:
   (none)     Interactive menu
   install    Full installation (deps + config + files)
-  update     Update QML code and restart shell
+  update     Check remote, pull, sync, restart shell
   doctor     Diagnose and fix problems
+  rollback   Restore previous snapshot
 
 Options:
   -y, --yes     Skip prompts (auto-yes)
@@ -47,9 +49,8 @@ Options:
 
 Examples:
   ./setup              # Interactive menu
-  ./setup install -y   # Non-interactive install
-  ./setup update       # Update and restart shell
-  ./setup doctor       # Fix common issues
+  ./setup update       # Check for updates and apply
+  ./setup rollback     # Restore previous state
 EOF
 }
 
@@ -83,7 +84,7 @@ BANNER
         local choice
         if $is_installed; then
             choice=$(gum choose --header "What would you like to do?" \
-                "Update" "Doctor" "Reinstall" "Help" "Exit")
+                "Update" "Doctor" "Rollback" "Reinstall" "Help" "Exit")
         else
             choice=$(gum choose --header "What would you like to do?" \
                 "Install" "Help" "Exit")
@@ -91,7 +92,7 @@ BANNER
     else
         echo "Select an option:"
         if $is_installed; then
-            select choice in "Update" "Doctor" "Reinstall" "Help" "Exit"; do break; done
+            select choice in "Update" "Doctor" "Rollback" "Reinstall" "Help" "Exit"; do break; done
         else
             select choice in "Install" "Help" "Exit"; do break; done
         fi
@@ -101,6 +102,7 @@ BANNER
         Install|Reinstall) run_install ;;
         Update) run_update ;;
         Doctor) run_doctor ;;
+        Rollback) run_rollback ;;
         Help) show_help; exit 0 ;;
         *) exit 0 ;;
     esac
@@ -141,80 +143,97 @@ run_install() {
 # Update
 ###############################################################################
 run_update() {
-    detect_distro
+    # Check for remote updates first
+    echo -e "${STY_FAINT}Checking for updates...${STY_RST}"
     
-    # Check versions
-    local installed_ver=$(get_installed_version)
-    local installed_commit=$(get_installed_commit)
+    if check_remote_updates; then
+        show_pending_commits
+        
+        if $ask; then
+            read -p "Pull and apply these updates? [Y/n] " -n 1 -r
+            echo
+            [[ $REPLY =~ ^[Nn]$ ]] && { echo "Cancelled."; return 0; }
+        fi
+        
+        # Create snapshot BEFORE pulling
+        log_info "Creating snapshot..."
+        local remote_commit=$(get_remote_commit)
+        local snapshot_id=$(create_snapshot "update" "Before update to ${remote_commit}" "$remote_commit")
+        echo -e "${STY_GREEN}✓ Snapshot created: ${snapshot_id}${STY_RST}"
+        
+        # Pull changes
+        log_info "Pulling changes..."
+        git -C "$REPO_ROOT" pull --ff-only origin 2>/dev/null || {
+            log_error "Git pull failed. You may have local changes."
+            echo -e "${STY_YELLOW}Run: git stash && ./setup update${STY_RST}"
+            return 1
+        }
+    else
+        # Check if local repo is ahead of installed
+        local installed_ver=$(get_installed_version)
+        local installed_commit=$(get_installed_commit)
+        local repo_ver=$(get_repo_version)
+        local repo_commit=$(get_repo_commit)
+        
+        if [[ "$installed_ver" == "0.0.0" ]] && [[ -f "${XDG_CONFIG_HOME}/illogical-impulse/installed_true" ]]; then
+            log_info "Detected existing installation without version tracking"
+        elif [[ "$installed_commit" == "$repo_commit" ]]; then
+            echo -e "${STY_GREEN}✓ Already up to date${STY_RST} ($installed_ver)"
+            
+            local pending=$(count_pending_migrations)
+            if [[ "$pending" -gt 0 ]]; then
+                echo -e "${STY_YELLOW}$pending pending migration(s) available${STY_RST}"
+                if $ask; then
+                    read -p "Apply migrations now? [Y/n] " -n 1 -r
+                    echo
+                    [[ ! $REPLY =~ ^[Nn]$ ]] && run_migrations_interactive
+                fi
+            fi
+            return 0
+        else
+            # Local repo ahead of installed - create snapshot
+            log_info "Creating snapshot..."
+            local snapshot_id=$(create_snapshot "update" "Before sync to ${repo_commit}" "$repo_commit")
+            echo -e "${STY_GREEN}✓ Snapshot created: ${snapshot_id}${STY_RST}"
+        fi
+    fi
+    
+    # Now sync the files
     local repo_ver=$(get_repo_version)
     local repo_commit=$(get_repo_commit)
     
-    # Detect existing install without version tracking
-    if [[ "$installed_ver" == "0.0.0" ]] && [[ -f "${XDG_CONFIG_HOME}/illogical-impulse/installed_true" ]]; then
-        log_info "Detected existing installation without version tracking"
-        log_info "Creating version tracking files..."
-    elif [[ "$installed_ver" == "$repo_ver" && "$installed_commit" == "$repo_commit" ]]; then
-        echo -e "${STY_GREEN}✓ Already up to date${STY_RST} ($installed_ver)"
-        
-        # Check pending migrations
-        local pending=$(count_pending_migrations)
-        if [[ "$pending" -gt 0 ]]; then
-            echo -e "${STY_YELLOW}$pending pending migration(s) available${STY_RST}"
-            if $ask; then
-                read -p "Apply migrations now? [Y/n] " -n 1 -r
-                echo
-                [[ ! $REPLY =~ ^[Nn]$ ]] && run_migrations_interactive
-            fi
-        fi
-        return 0
-    fi
-    
-    echo -e "${STY_CYAN}Updating ii-niri${STY_RST}"
-    echo -e "  From: $installed_ver → $repo_ver"
-    echo ""
-    
-    $ask && pause
-    
-    # Sync QML code only
-    export IS_UPDATE=true
-    export SKIP_MIGRATIONS=true
-    export quiet=true
+    echo -e "${STY_CYAN}Syncing ii-niri...${STY_RST}"
     
     II_SOURCE="${REPO_ROOT}"
     II_TARGET="${XDG_CONFIG_HOME}/quickshell/ii"
     
-    # Backup before update
-    log_info "Creating backup..."
-    create_update_backup "$II_TARGET" >/dev/null
+    # Check if source and target are the same (dev setup)
+    local src_real=$(realpath "$II_SOURCE" 2>/dev/null || echo "$II_SOURCE")
+    local tgt_real=$(realpath "$II_TARGET" 2>/dev/null || echo "$II_TARGET")
+    
+    if [[ "$src_real" != "$tgt_real" ]]; then
+        # Sync root QML files
+        for qml in "${II_SOURCE}"/*.qml; do
+            [[ -f "$qml" ]] && cp -f "$qml" "${II_TARGET}/$(basename "$qml")"
+        done
+        
+        # Sync directories
+        for dir in modules services scripts assets translations; do
+            [[ -d "${II_SOURCE}/${dir}" ]] && rsync -a --delete "${II_SOURCE}/${dir}/" "${II_TARGET}/${dir}/"
+        done
+        
+        # Sync other files
+        [[ -f "${II_SOURCE}/requirements.txt" ]] && cp -f "${II_SOURCE}/requirements.txt" "${II_TARGET}/"
+    fi
     
     # Generate manifest
-    generate_manifest "$II_SOURCE" "${II_TARGET}/.ii-manifest.new"
-    
-    # Sync root QML files
-    for qml in "${II_SOURCE}"/*.qml; do
-        [[ -f "$qml" ]] && cp -f "$qml" "${II_TARGET}/$(basename "$qml")"
-    done
-    
-    # Sync directories
-    for dir in modules services scripts assets translations; do
-        [[ -d "${II_SOURCE}/${dir}" ]] && rsync -a --delete "${II_SOURCE}/${dir}/" "${II_TARGET}/${dir}/"
-    done
-    
-    # Sync requirements.txt
-    [[ -f "${II_SOURCE}/requirements.txt" ]] && cp -f "${II_SOURCE}/requirements.txt" "${II_TARGET}/"
-    
-    # Finalize manifest and cleanup orphans
-    mv "${II_TARGET}/.ii-manifest.new" "${II_TARGET}/.ii-manifest"
-    cleanup_orphans "$II_TARGET" "${II_TARGET}/.ii-manifest"
+    generate_manifest "$II_SOURCE" "${II_TARGET}/.ii-manifest"
     
     # Fix permissions
     find "$II_TARGET/scripts" \( -name "*.sh" -o -name "*.fish" -o -name "*.py" \) -exec chmod +x {} \; 2>/dev/null || true
     
     # Update version
     set_installed_version "$repo_ver" "$repo_commit" "update"
-    
-    # Cleanup old backups
-    cleanup_old_backups "$II_BACKUP_DIR" 5
     
     echo -e "${STY_GREEN}✓ Update complete${STY_RST}"
     
@@ -238,6 +257,9 @@ run_update() {
     nohup qs -c ii >/dev/null 2>&1 &
     disown
     echo -e "${STY_GREEN}✓ Shell restarted${STY_RST}"
+    
+    echo ""
+    echo -e "${STY_FAINT}Tip: Run './setup rollback' if something breaks${STY_RST}"
 }
 
 ###############################################################################
@@ -256,6 +278,7 @@ while [[ $# -gt 0 ]]; do
         install) COMMAND="install"; shift ;;
         update) COMMAND="update"; shift ;;
         doctor) COMMAND="doctor"; shift ;;
+        rollback) COMMAND="rollback"; shift ;;
         -y|--yes) ask=false; shift ;;
         -q|--quiet) quiet=true; shift ;;
         -h|--help) show_help; exit 0 ;;
@@ -270,5 +293,6 @@ case "$COMMAND" in
     install) run_install ;;
     update) run_update ;;
     doctor) run_doctor ;;
+    rollback) run_rollback ;;
     "") tui_menu ;;
 esac

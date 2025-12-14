@@ -5,6 +5,28 @@ All notable changes to ii-niri will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-14
+
+### Added
+- Snapshot system for time-machine style rollbacks
+- `./setup rollback` command to restore previous states
+- Auto git fetch and pull in update command
+- Doctor now auto-starts shell if not running
+- Fish shell added to core dependencies
+- EasyEffects added to audio dependencies
+
+### Changed
+- Simplified setup to 4 commands: install, update, doctor, rollback
+- Update now checks remote for new commits before syncing
+- Update creates snapshot automatically before applying changes
+- Doctor now fixes issues automatically (uv pip, version tracking, manifest)
+- Removed redundant commands (install-deps, migrate, status, changelog, restore)
+
+### Fixed
+- Doctor now uses `uv pip` instead of `pip` for Python package checks
+- Update now properly restarts shell after sync
+- Backup directory no longer created when empty
+
 ## [2.1.0] - 2025-12-14
 
 ### Added
