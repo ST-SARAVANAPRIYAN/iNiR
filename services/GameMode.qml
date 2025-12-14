@@ -25,6 +25,9 @@ Singleton {
     property bool autoDetect: Config.options?.gameMode?.autoDetect ?? true
     property bool manuallyActivated: _manualActive
     
+    // True if ANY window in ANY workspace is fullscreen (for toast suppression)
+    property bool hasAnyFullscreenWindow: false
+    
     // Suppress niri reload toast briefly after GameMode changes
     property bool suppressNiriToast: false
 
@@ -87,11 +90,18 @@ Singleton {
 
     // Check if a window is fullscreen by comparing to output size
     function isWindowFullscreen(window) {
-        if (!window || !window.layout) return false
+        if (!window) return false
         if (!CompositorService.isNiri) return false
 
-        const windowSize = window.layout.window_size
+        // Get window size from layout
+        const layout = window.layout
+        if (!layout) return false
+        
+        const windowSize = layout.window_size
         if (!windowSize || windowSize.length < 2) return false
+        
+        const windowWidth = windowSize[0]
+        const windowHeight = windowSize[1]
 
         // Get output for this window's workspace
         const workspaceId = window.workspace_id
@@ -99,16 +109,38 @@ Singleton {
         if (!workspace || !workspace.output) return false
 
         const output = NiriService.outputs[workspace.output]
-        if (!output || !output.logical) return false
-
-        const outputWidth = output.logical.width
-        const outputHeight = output.logical.height
+        if (!output) return false
+        
+        // Try logical first, then mode
+        let outputWidth, outputHeight
+        if (output.logical) {
+            outputWidth = output.logical.width
+            outputHeight = output.logical.height
+        } else if (output.current_mode !== undefined && output.modes) {
+            const mode = output.modes[output.current_mode]
+            outputWidth = mode?.width
+            outputHeight = mode?.height
+        }
+        
+        if (!outputWidth || !outputHeight) return false
 
         // Window is fullscreen if it covers most of the output
-        const widthMatch = windowSize[0] >= (outputWidth - _marginThreshold)
-        const heightMatch = windowSize[1] >= (outputHeight - _marginThreshold)
+        const widthMatch = windowWidth >= (outputWidth - _marginThreshold)
+        const heightMatch = windowHeight >= (outputHeight - _marginThreshold)
 
         return widthMatch && heightMatch
+    }
+    
+    // Check if ANY window across all workspaces is fullscreen
+    function checkAnyFullscreenWindow(): bool {
+        if (!CompositorService.isNiri) return false
+        const windows = NiriService.windows
+        if (!windows || !Array.isArray(windows)) return false
+        
+        for (let i = 0; i < windows.length; i++) {
+            if (isWindowFullscreen(windows[i])) return true
+        }
+        return false
     }
 
     // Debounce timer for fullscreen checks
@@ -124,7 +156,17 @@ Singleton {
     }
 
     function _doCheckFullscreen() {
-        if (!autoDetect || !CompositorService.isNiri) {
+        if (!CompositorService.isNiri) {
+            _autoActive = false
+            _fullscreenCount = 0
+            hasAnyFullscreenWindow = false
+            return
+        }
+        
+        // Always update hasAnyFullscreenWindow (for toast suppression)
+        hasAnyFullscreenWindow = checkAnyFullscreenWindow()
+
+        if (!autoDetect) {
             _autoActive = false
             _fullscreenCount = 0
             return
@@ -184,10 +226,15 @@ Singleton {
     // React to window changes - only on focus change, not every window update
     Connections {
         target: NiriService
-        enabled: root.autoDetect && CompositorService.isNiri && root._initialized
+        enabled: CompositorService.isNiri && root._initialized
 
         function onActiveWindowChanged() {
             root.checkFullscreen()
+        }
+        
+        function onWindowsChanged() {
+            // Update hasAnyFullscreenWindow when windows change
+            root.hasAnyFullscreenWindow = root.checkAnyFullscreenWindow()
         }
     }
 
@@ -227,9 +274,6 @@ Singleton {
     function setNiriAnimations(enabled) {
         if (!controlNiriAnimations) return
         
-        // Suppress toast for this reload
-        root.suppressNiriToast = true
-        
         // Use sed to toggle "off" line in animations block
         niriAnimProcess.command = enabled
             ? ["bash", "-c", "sed -i '/^animations {/,/^}/ s/^\\([ \\t]*\\)off$/\\1\\/\\/off/' " + niriConfigPath + " && niri msg action reload-config"]
@@ -244,14 +288,17 @@ Singleton {
                 console.log("[GameMode] Niri animations updated")
             }
             // Clear suppress after delay
-            suppressClearTimer.start()
+            suppressClearTimer.restart()
         }
     }
     
     Timer {
         id: suppressClearTimer
-        interval: 1000
-        onTriggered: root.suppressNiriToast = false
+        interval: 2000
+        onTriggered: {
+            console.log("[GameMode] Clearing suppressNiriToast")
+            root.suppressNiriToast = false
+        }
     }
 
     // Track last niri animation state to avoid redundant updates
@@ -274,6 +321,8 @@ Singleton {
     onActiveChanged: {
         console.log("[GameMode] Active:", active, "(manual:", _manualActive, "auto:", _autoActive, ")")
         if (CompositorService.isNiri && controlNiriAnimations) {
+            // Suppress toast IMMEDIATELY when state changes
+            root.suppressNiriToast = true
             niriAnimDebounce.restart()
         }
     }

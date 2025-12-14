@@ -18,9 +18,13 @@ Scope {
     function shouldShowReloadToast(): bool {
         // Global disable
         if (!(Config.options?.reloadToasts?.enable ?? true)) return false
-        // GameMode suppression (active or just triggered niri reload)
-        if (GameMode.active && (Config.options?.gameMode?.disableReloadToasts ?? true)) return false
-        if (GameMode.suppressNiriToast) return false
+        
+        // Suppress if disableReloadToasts is enabled AND (GameMode active OR any fullscreen window exists)
+        const disableInGameMode = Config.options?.gameMode?.disableReloadToasts ?? true
+        if (disableInGameMode && (GameMode.active || GameMode.hasAnyFullscreenWindow || GameMode.suppressNiriToast)) {
+            return false
+        }
+        
         return true
     }
     
