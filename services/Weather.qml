@@ -11,13 +11,39 @@ import qs.modules.common
 Singleton {
     id: root
 
+    readonly property bool enabled: Config.options?.bar?.weather?.enable ?? false
     readonly property int fetchInterval: (Config.options?.bar?.weather?.fetchInterval ?? 10) * 60 * 1000
     readonly property string city: Config.options?.bar?.weather?.city ?? ""
     readonly property bool useUSCS: Config.options?.bar?.weather?.useUSCS ?? false
     property bool gpsActive: Config.options?.bar?.weather?.enableGPS ?? false
 
+    // GPS is started when gpsActive becomes true and weather is enabled
+    onGpsActiveChanged: {
+        if (root.gpsActive && root.enabled && !positionSource.active) {
+            console.info("[WeatherService] Starting GPS service.")
+            positionSource.start()
+        }
+    }
+
+    onEnabledChanged: {
+        if (root.enabled && root.gpsActive && !positionSource.active) {
+            console.info("[WeatherService] Weather enabled, starting GPS.")
+            positionSource.start()
+        }
+    }
+
     onUseUSCSChanged: root.getData()
     onCityChanged: root._geocodeCity()
+
+    Component.onCompleted: {
+        if (root.enabled && (Config.ready ?? false)) {
+            if (root.gpsActive && !positionSource.active) {
+                console.info("[WeatherService] Starting GPS service.")
+                positionSource.start()
+            }
+            Qt.callLater(() => root.getData())
+        }
+    }
 
     property var location: ({ valid: false, lat: 0, lon: 0, name: "" })
 
@@ -25,7 +51,9 @@ Singleton {
         uv: "0",
         humidity: "0%",
         sunrise: "--:--",
+        sunriseIso: "",
         sunset: "--:--",
+        sunsetIso: "",
         windDir: "N",
         wCode: "0",
         city: "City",
@@ -36,6 +64,23 @@ Singleton {
         temp: "--°C",
         tempFeelsLike: "--°C"
     })
+
+    function isNightNow(): bool {
+        const now = new Date();
+
+        const sunriseIso = root.data?.sunriseIso ?? "";
+        const sunsetIso = root.data?.sunsetIso ?? "";
+        if (sunriseIso.length > 0 && sunsetIso.length > 0) {
+            const sunrise = new Date(sunriseIso);
+            const sunset = new Date(sunsetIso);
+            if (!isNaN(sunrise.getTime()) && !isNaN(sunset.getTime())) {
+                return now < sunrise || now > sunset;
+            }
+        }
+
+        const h = now.getHours();
+        return h < 6 || h >= 18;
+    }
 
     // WMO Weather codes to wttr.in codes (for icon compatibility)
     function _wmoToWttr(code: int): string {
@@ -82,8 +127,10 @@ Singleton {
         result.windDir = root._degToCompass(current.wind_direction_10m ?? 0);
         result.press = Math.round(current.surface_pressure ?? 1013) + " hPa";
         result.uv = daily?.uv_index_max?.[0]?.toFixed(1) ?? "0";
-        result.sunrise = root._formatTime(daily?.sunrise?.[0]);
-        result.sunset = root._formatTime(daily?.sunset?.[0]);
+        result.sunriseIso = daily?.sunrise?.[0] ?? "";
+        result.sunsetIso = daily?.sunset?.[0] ?? "";
+        result.sunrise = root._formatTime(result.sunriseIso);
+        result.sunset = root._formatTime(result.sunsetIso);
 
         // Visibility not available in Open-Meteo free tier, use placeholder
         result.visib = "10 km";
@@ -114,12 +161,13 @@ Singleton {
         }
         const cleanCity = root.city.replace(/[\r\n]+/g, '').trim();
         const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanCity)}&count=1&language=en&format=json`;
-        geocoder.command = ["curl", "-s", "--max-time", "10", url];
+        geocoder.command = ["/usr/bin/curl", "-s", "--max-time", "10", url];
         geocoder.running = true;
     }
 
     function _fetchByIP(): void {
-        // Use ip-api.com to get location from IP
+        // Avoid duplicate requests
+        if (ipLocator.running) return;
         ipLocator.running = true;
     }
 
@@ -129,25 +177,21 @@ Singleton {
             return;
         }
 
+        // Avoid duplicate requests
+        if (fetcher.running) return;
+
         const lat = root.location.lat;
         const lon = root.location.lon;
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&daily=sunrise,sunset,uv_index_max&timezone=auto`;
 
-        fetcher.command = ["curl", "-s", "--max-time", "10", url];
+        fetcher.command = ["/usr/bin/curl", "-s", "--max-time", "10", url];
         fetcher.running = true;
-    }
-
-    Component.onCompleted: {
-        if (root.gpsActive) {
-            console.info("[WeatherService] Starting GPS service.");
-            positionSource.start();
-        }
     }
 
     // Geocoding process
     Process {
         id: geocoder
-        command: ["curl", "-s", "--max-time", "10", ""]
+        command: ["/usr/bin/curl", "-s", "--max-time", "10", ""]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text.length === 0) return;
@@ -177,7 +221,7 @@ Singleton {
     // IP-based location fallback
     Process {
         id: ipLocator
-        command: ["curl", "-s", "--max-time", "10", "http://ip-api.com/json/?fields=lat,lon,city,regionName"]
+        command: ["/usr/bin/curl", "-s", "--max-time", "10", "http://ip-api.com/json/?fields=lat,lon,city,regionName"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text.length === 0) return;
@@ -190,7 +234,7 @@ Singleton {
                             lon: data.lon,
                             name: data.city + (data.regionName ? `, ${data.regionName}` : "")
                         };
-                        console.info(`[WeatherService] IP location: ${root.location.name}`);
+                        console.info(`[WeatherService] Location: ${root.location.name}`);
                         root.getData();
                     }
                 } catch (e) {
@@ -203,15 +247,16 @@ Singleton {
     // Weather data fetcher
     Process {
         id: fetcher
-        command: ["curl", "-s", "--max-time", "10", ""]
+        command: ["/usr/bin/curl", "-s", "--max-time", "10", ""]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text.length === 0) return;
                 try {
                     const data = JSON.parse(text);
                     root._refineData(data);
+                    console.info("[WeatherService] Updated:", root.data.temp, root.data.city)
                 } catch (e) {
-                    console.error(`[WeatherService] Weather fetch error: ${e.message}`);
+                    console.error(`[WeatherService] Fetch error: ${e.message}`);
                 }
             }
         }
@@ -241,7 +286,7 @@ Singleton {
                 positionSource.stop();
                 root.location.valid = false;
                 root.gpsActive = false;
-                Quickshell.execDetached(["notify-send", Translation.tr("Weather Service"),
+                Quickshell.execDetached(["/usr/bin/notify-send", Translation.tr("Weather Service"),
                     Translation.tr("Cannot find a GPS service. Using the fallback method instead."), "-a", "Shell"]);
                 console.error("[WeatherService] Could not acquire a valid backend plugin.");
                 root._geocodeCity();
@@ -250,10 +295,18 @@ Singleton {
     }
 
     Timer {
-        running: true
+        id: fetchTimer
+        running: root.enabled && Config.ready
         repeat: true
         interval: root.fetchInterval > 0 ? root.fetchInterval : 600000
-        triggeredOnStart: true
+        // Don't use triggeredOnStart - we handle it in onRunningChanged
         onTriggered: root.getData()
+        onRunningChanged: {
+            if (running) {
+                console.info("[WeatherService] Fetch timer started, interval:", interval / 1000 / 60, "min")
+                // Fetch immediately when timer starts
+                Qt.callLater(() => root.getData())
+            }
+        }
     }
 }

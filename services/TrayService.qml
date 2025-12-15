@@ -4,11 +4,15 @@ import qs.modules.common
 import qs.services
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.SystemTray
 import Quickshell.Wayland
 
 Singleton {
     id: root
+
+    property bool _xembedProxyStartRequested: false
+    property bool _xembedProxyCheckedOnce: false
 
     property bool smartTray: Config.options?.tray?.filterPassive ?? true
     
@@ -30,6 +34,7 @@ Singleton {
         { matches: ["skype", "Skype"], launch: "skypeforlinux" },
         { matches: ["viber", "Viber"], launch: "viber" },
         { matches: ["zoom", "Zoom"], launch: "zoom" },
+        { matches: ["easyeffects", "EasyEffects", "com.github.wwmm.easyeffects"], launch: "easyeffects" },
     ]
     
     // Check if an item is a problematic app
@@ -138,7 +143,7 @@ Singleton {
     }
     
     property var _pinnedItems: Config.options?.tray?.pinnedItems ?? []
-    property list<var> itemsInUserList: SystemTray.items.values.filter(i => (isValidItem(i) && _pinnedItems.includes(i.id) && (!smartTray || i.status !== Status.Passive)))
+    property list<var> itemsInUserList: SystemTray.items.values.filter(i => (isValidItem(i) && _pinnedItems.includes(i.id)))
     property list<var> itemsNotInUserList: SystemTray.items.values.filter(i => (isValidItem(i) && !_pinnedItems.includes(i.id) && (!smartTray || i.status !== Status.Passive)))
 
     property bool invertPins: Config.options?.tray?.invertPinnedItems ?? false
@@ -176,6 +181,79 @@ Singleton {
             unpin(itemId)
         } else {
             pin(itemId)
+        }
+    }
+
+    function requestXembedProxyIfNeeded(): void {
+        if (!CompositorService.isNiri)
+            return;
+        root.ensureXembedSniProxy();
+    }
+
+    function ensureXembedSniProxy(): void {
+        if (!CompositorService.isNiri)
+            return;
+        if (root._xembedProxyStartRequested)
+            return;
+        root._xembedProxyStartRequested = true;
+        xembedProxyDelayedStartTimer.restart();
+    }
+
+    Timer {
+        id: xembedProxyDelayedStartTimer
+        interval: 600
+        repeat: false
+        onTriggered: {
+            xembedProxyCheckProc.running = false;
+            xembedProxyCheckProc.running = true;
+        }
+    }
+
+    Process {
+        id: xembedProxyCheckProc
+        command: ["/usr/bin/pgrep", "-x", "xembedsniproxy"]
+        onExited: (exitCode, exitStatus) => {
+            root._xembedProxyCheckedOnce = true;
+            if (exitCode !== 0) {
+                xembedProxyStartProc.running = false;
+                xembedProxyStartProc.running = true;
+            }
+        }
+    }
+
+    Process {
+        id: xembedProxyStartProc
+        stdout: SplitParser {
+            onRead: (line) => console.log("[xembedsniproxy]", line)
+        }
+        stderr: SplitParser {
+            onRead: (line) => console.log("[xembedsniproxy]", line)
+        }
+        command: [
+            "/usr/bin/env",
+            "QT_NO_XDG_DESKTOP_PORTAL=1",
+            "QT_QPA_PLATFORM=xcb",
+            "/usr/bin/xembedsniproxy"
+        ]
+        onExited: (exitCode, exitStatus) => {
+            console.log("[xembedsniproxy] exited", exitCode, exitStatus)
+        }
+    }
+
+    Connections {
+        target: Config
+        function onReadyChanged() {
+            if (Config.ready) {
+                // Core behavior: start on Niri, but defer via timer to keep startup smooth.
+                root.requestXembedProxyIfNeeded();
+            }
+        }
+    }
+
+    Connections {
+        target: CompositorService
+        function onIsNiriChanged() {
+            root.requestXembedProxyIfNeeded();
         }
     }
 

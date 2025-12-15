@@ -34,28 +34,32 @@ Singleton {
     }
 
     function _stopSwayidle() {
-        Quickshell.execDetached(["pkill", "-x", "swayidle"])
+        Quickshell.execDetached(["/usr/bin/pkill", "-x", "swayidle"])
     }
 
     function _startSwayidle() {
         if (inhibit) return
-        
-        let cmd = "exec swayidle -w"
-        
-        if (screenOffTimeout > 0)
-            cmd += ` timeout ${screenOffTimeout} 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors'`
-        
-        if (lockTimeout > 0)
-            cmd += ` timeout ${lockTimeout} 'qs -c ii ipc call lock activate'`
-        
-        if (suspendTimeout > 0)
-            cmd += ` timeout ${suspendTimeout} 'systemctl suspend -i'`
-        
-        if (Config.options?.idle?.lockBeforeSleep !== false)
-            cmd += ` before-sleep 'qs -c ii ipc call lock activate'`
+
+        const cmd = ["/usr/bin/swayidle", "-w"]
+
+        if (screenOffTimeout > 0) {
+            cmd.push("timeout", screenOffTimeout.toString(), "/usr/bin/niri msg action power-off-monitors", "resume", "/usr/bin/niri msg action power-on-monitors")
+        }
+
+        if (lockTimeout > 0) {
+            cmd.push("timeout", lockTimeout.toString(), "/usr/bin/qs -c ii ipc call lock activate")
+        }
+
+        if (suspendTimeout > 0) {
+            cmd.push("timeout", suspendTimeout.toString(), "/usr/bin/systemctl suspend -i")
+        }
+
+        if (Config.options?.idle?.lockBeforeSleep !== false) {
+            cmd.push("before-sleep", "/usr/bin/qs -c ii ipc call lock activate")
+        }
 
         console.log("[Idle] Starting swayidle")
-        Quickshell.execDetached(["sh", "-c", cmd])
+        Quickshell.execDetached(cmd)
     }
 
     Timer {

@@ -43,6 +43,7 @@ Item {
                 root.showBluetoothDialog = false;
                 root.showAudioOutputDialog = false;
                 root.showAudioInputDialog = false;
+                root.showNightLightDialog = false;
             }
         }
     }
@@ -167,22 +168,19 @@ Item {
         readonly property bool shown: root[shownPropertyString]
         anchors.fill: parent
 
-        onShownChanged: if (shown) toggleDialogLoader.active = true;
         active: shown
-        onActiveChanged: {
-            if (active) {
+        
+        onItemChanged: {
+            if (item) {
                 item.show = true;
                 item.forceActiveFocus();
             }
         }
+        
         Connections {
             target: toggleDialogLoader.item
             function onDismiss() {
-                toggleDialogLoader.item.show = false
                 root[toggleDialogLoader.shownPropertyString] = false;
-            }
-            function onVisibleChanged() {
-                if (!toggleDialogLoader.item.visible && !root[toggleDialogLoader.shownPropertyString]) toggleDialogLoader.active = false;
             }
         }
     }
@@ -306,7 +304,7 @@ Item {
                     
                     GlobalStates.sidebarRightOpen = false;
                     Qt.callLater(() => {
-                        Quickshell.execDetached(["qs", "-n", "-p", root.settingsQmlPath]);
+                        Quickshell.execDetached(["qs", "-c", "ii", "ipc", "call", "settings", "open"]);
                     })
                 }
                 StyledToolTip {

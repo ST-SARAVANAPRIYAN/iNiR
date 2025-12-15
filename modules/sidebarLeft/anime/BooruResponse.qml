@@ -159,7 +159,7 @@ Rectangle {
         StyledText { // Message
             id: messageText
             Layout.fillWidth: true
-            visible: !cleanLayout && root.responseData.message.length > 0
+            visible: root.responseData.message.length > 0 && (!cleanLayout || root.responseData.images.length === 0)
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer1
             text: root.responseData.message

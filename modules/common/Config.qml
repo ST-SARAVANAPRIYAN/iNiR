@@ -13,7 +13,20 @@ Singleton {
     property bool blockWrites: false
 
     function setNestedValue(nestedKey, value) {
-        let keys = nestedKey.split(".");
+        let keys = [];
+        if (Array.isArray(nestedKey)) {
+            keys = nestedKey;
+        } else if (typeof nestedKey === "string") {
+            keys = nestedKey.split(".");
+        } else {
+            console.warn("[Config] setNestedValue called with invalid nestedKey:", nestedKey);
+            return;
+        }
+
+        if (keys.length === 0) {
+            console.warn("[Config] setNestedValue called with empty key");
+            return;
+        }
         let obj = root.options;
         let parents = [obj];
 
@@ -261,9 +274,9 @@ Singleton {
                 // Values in %
                 property JsonObject protection: JsonObject {
                     // Prevent sudden bangs
-                    property bool enable: false
+                    property bool enable: true
                     property real maxAllowedIncrease: 10
-                    property real maxAllowed: 99
+                    property real maxAllowed: 100
                 }
             }
 
@@ -901,6 +914,10 @@ Singleton {
                 property JsonObject workspaceNames: JsonObject {
                     // Custom workspace names, keyed by workspace index (1-based)
                     // Example: "1": "Main", "2": "Work", "3": "Gaming"
+                }
+                property JsonObject taskView: JsonObject {
+                    property string mode: "centered" // "carousel" or "centered"
+                    property bool closeOnSelect: false // Close TaskView when clicking a window
                 }
             }
             property JsonObject workSafety: JsonObject {

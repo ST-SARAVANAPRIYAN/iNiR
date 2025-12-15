@@ -41,11 +41,8 @@ Rectangle {
             active: (Config.options?.sidebar?.quickSliders?.showBrightness ?? true) && !!root.brightnessMonitor
             sourceComponent: QuickSlider {
                 materialSymbol: "brightness_6"
-                value: root.brightnessMonitor ? root.brightnessMonitor.brightness : 0
-                onMoved: {
-                    if (root.brightnessMonitor)
-                        root.brightnessMonitor.setBrightness(value)
-                }
+                modelValue: root.brightnessMonitor?.brightness ?? 0
+                onMoved: root.brightnessMonitor?.setBrightness(value)
             }
         }
 
@@ -58,11 +55,9 @@ Rectangle {
             active: Config.options?.sidebar?.quickSliders?.showVolume ?? true
             sourceComponent: QuickSlider {
                 materialSymbol: "volume_up"
-                value: Audio.sink && Audio.sink.audio ? Audio.sink.audio.volume : 0
-                onMoved: {
-                    if (Audio.sink && Audio.sink.audio)
-                        Audio.sink.audio.volume = value
-                }
+                modelValue: Audio.sink?.audio?.volume ?? 0
+                to: Audio.uiMaxSinkVolume
+                onMoved: Audio.setSinkVolume(value)
             }
         }
 
@@ -75,9 +70,9 @@ Rectangle {
             active: Config.options?.sidebar?.quickSliders?.showMic ?? false
             sourceComponent: QuickSlider {
                 materialSymbol: "mic"
-                value: Audio.source && Audio.source.audio ? Audio.source.audio.volume : 0
+                modelValue: Audio.source?.audio?.volume ?? 0
                 onMoved: {
-                    if (Audio.source && Audio.source.audio)
+                    if (Audio.source?.audio)
                         Audio.source.audio.volume = value
                 }
             }
@@ -87,8 +82,19 @@ Rectangle {
     component QuickSlider: StyledSlider { 
         id: quickSlider
         required property string materialSymbol
+        property real modelValue: 0
         configuration: StyledSlider.Configuration.M
         stopIndicatorValues: []
+        scrollable: true
+
+        // Sync from model only when not interacting, with threshold to avoid micro-jumps
+        onModelValueChanged: {
+            if (!pressed && !_userInteracting) {
+                if (Math.abs(value - modelValue) > 0.005) {
+                    value = modelValue
+                }
+            }
+        }
         
         MaterialSymbol {
             id: icon
