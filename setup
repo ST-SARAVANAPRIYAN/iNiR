@@ -338,6 +338,33 @@ run_update() {
     set_installed_version "$repo_ver" "$repo_commit" "update"
     
     tui_success "Files synced"
+
+    # Update Vesktop themes (themes live outside the quickshell/ii tree)
+    if [[ -d "${REPO_ROOT}/dots/.config/vesktop/themes" ]]; then
+        echo ""
+        tui_info "Updating Vesktop themes..."
+
+        mkdir -p "${XDG_CONFIG_HOME}/vesktop/themes"
+        mkdir -p "${XDG_CONFIG_HOME}/Vesktop/themes"
+
+        OLD_VESKTOP_THEMES=(
+            "midnight-ii.theme.css"
+            "dms-midnight.theme.css"
+            "system24-ii.theme.css"
+            "system24-palette.css"
+            "ii-palette.css"
+            "ii-system24.theme.css"
+        )
+        for old_theme in "${OLD_VESKTOP_THEMES[@]}"; do
+            [[ -f "${XDG_CONFIG_HOME}/vesktop/themes/${old_theme}" ]] && rm -f "${XDG_CONFIG_HOME}/vesktop/themes/${old_theme}"
+            [[ -f "${XDG_CONFIG_HOME}/Vesktop/themes/${old_theme}" ]] && rm -f "${XDG_CONFIG_HOME}/Vesktop/themes/${old_theme}"
+        done
+
+        install_dir "${REPO_ROOT}/dots/.config/vesktop/themes" "${XDG_CONFIG_HOME}/vesktop/themes"
+        install_dir "${REPO_ROOT}/dots/.config/vesktop/themes" "${XDG_CONFIG_HOME}/Vesktop/themes"
+
+        tui_success "Vesktop themes updated"
+    fi
     
     # Migrations
     local pending=$(count_pending_migrations)
