@@ -7,7 +7,7 @@ A Quickshell shell for Niri. Fork of end-4's illogical-impulse, butchered to wor
 >
 > **Heads up:** almost everything here is configurable. Modules, colors, fonts, animations - if something bugs you, there's probably a toggle for it. Hit `Super+,` for settings before you rage-quit.
 
-suggest, ask or wherever: [Discord](https://discord.gg/FDJUfGZmK8)
+suggest, ask or wherever: [Discord](https://discord.gg/pAPTfAhZUJ)
 
 ### Material ii
 
