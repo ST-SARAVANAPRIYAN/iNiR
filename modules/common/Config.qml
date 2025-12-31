@@ -102,7 +102,7 @@ Singleton {
                 "iiBar", "iiBackground", "iiCheatsheet", "iiDock", "iiLock", "iiMediaControls", 
                 "iiNotificationPopup", "iiOnScreenDisplay", "iiOnScreenKeyboard", "iiOverlay", 
                 "iiOverview", "iiPolkit", "iiRegionSelector", "iiScreenCorners", "iiSessionScreen", 
-                "iiSidebarLeft", "iiSidebarRight", "iiVerticalBar", "iiWallpaperSelector", "iiAltSwitcher", "iiClipboard"
+                "iiSidebarLeft", "iiSidebarRight", "iiVerticalBar", "iiWallpaperSelector", "iiWidgetBar", "iiAltSwitcher", "iiClipboard"
             ]
             property string panelFamily: "ii" // "ii" or "waffle"
             property bool familyTransitionAnimation: true // Show animated overlay when switching families
@@ -133,7 +133,7 @@ Singleton {
 
             property JsonObject appearance: JsonObject {
                 property string theme: "auto" // Theme preset ID: "auto" for wallpaper-based, or preset name like "gruvbox-dark", "catppuccin-mocha", "custom", etc.
-                property string globalStyle: "material" // "material" | "cards" | "aurora"
+                property string globalStyle: "material" // "material" | "cards" | "aurora" | "inir"
                 property bool extraBackgroundTint: true
                 property JsonObject customTheme: JsonObject {
                     property bool darkmode: true
@@ -216,7 +216,7 @@ Singleton {
                 property JsonObject typography: JsonObject {
                     property string mainFont: "Roboto Flex"
                     property string titleFont: "Gabarito"
-                    property string monospaceFont: "JetBrains Mono NF"
+                    property string monospaceFont: "JetBrainsMono Nerd Font"
                     property real sizeScale: 1.0
                     property JsonObject variableAxes: JsonObject {
                         property int wght: 300
@@ -377,6 +377,8 @@ Singleton {
                     property bool vignetteEnabled: false
                     property real vignetteIntensity: 0.5
                     property real vignetteRadius: 0.7
+                    property bool useAuroraStyle: false
+                    property real auroraOverlayOpacity: 0.38
                 }
                 property JsonObject parallax: JsonObject {
                     property bool vertical: false
@@ -488,8 +490,6 @@ Singleton {
                 }
                 property JsonObject weather: JsonObject {
                     property bool enable: false
-                    property bool enableGPS: true // gps based location
-                    property string city: "" // When 'enableGPS' is false
                     property bool useUSCS: false // Instead of metric (SI) units
                     property int fetchInterval: 10 // minutes
                 }
@@ -614,6 +614,8 @@ Singleton {
                 property string position: "topRight"
                 // Margen respecto a los bordes de pantalla (px)
                 property int edgeMargin: 4
+                // Do Not Disturb mode
+                property bool silent: false
             }
 
             property JsonObject osd: JsonObject {
@@ -726,6 +728,10 @@ Singleton {
                 property int interval: 4
             }
 
+            property JsonObject voiceSearch: JsonObject {
+                property int duration: 5
+            }
+
             property JsonObject search: JsonObject {
                 property int nonAppResultDelay: 30 // This prevents lagging when typing
                 property string engineBaseUrl: "https://www.google.com/search?q="
@@ -774,6 +780,65 @@ Singleton {
                     // Optional API key for NSFW & user-specific filters
                     property string apiKey: ""
                 }
+                // Widgets tab in left sidebar
+                property JsonObject widgets: JsonObject {
+                    property bool enable: true
+                    // Widget visibility
+                    property bool media: true
+                    property bool week: true
+                    property bool context: true
+                    property bool note: true
+                    property bool launch: true
+                    property bool controls: true
+                    property bool status: true
+                    property bool crypto: false
+                    // Widget order (drag to reorder)
+                    property list<string> widgetOrder: ["media", "week", "context", "note", "launch", "controls", "status", "crypto"]
+                    // Spacing between widgets (px)
+                    property int spacing: 8
+
+                    // GlanceHeader behavior
+                    property JsonObject glance: JsonObject {
+                        property bool showVolume: true
+                        property bool showGameMode: true
+                        property bool showDnd: true
+                    }
+
+                    // StatusRings behavior
+                    property JsonObject statusRings: JsonObject {
+                        property bool showCpu: true
+                        property bool showRam: true
+                        property bool showDisk: true
+                        property bool showTemp: true
+                        property bool showBattery: true
+                    }
+
+                    // ControlsCard behavior
+                    property JsonObject controlsCard: JsonObject {
+                        property bool showDarkMode: true
+                        property bool showDnd: true
+                        property bool showNightLight: true
+                        property bool showGameMode: true
+                        property bool showNetwork: true
+                        property bool showBluetooth: true
+                        property bool showSettings: true
+                        property bool showLock: true
+                    }
+
+                    // CryptoWidget behavior
+                    property JsonObject crypto_settings: JsonObject {
+                        property int refreshInterval: 60
+                        property list<string> coins: ["bitcoin", "ethereum"]
+                    }
+
+                    // QuickLaunch shortcuts
+                    property list<var> quickLaunch: [
+                        { "icon": "folder", "name": "Files", "cmd": "/usr/bin/nautilus" },
+                        { "icon": "terminal", "name": "Terminal", "cmd": "/usr/bin/kitty" },
+                        { "icon": "web", "name": "Browser", "cmd": "/usr/bin/firefox" },
+                        { "icon": "code", "name": "Code", "cmd": "/usr/bin/code" }
+                    ]
+                }
                 property JsonObject cornerOpen: JsonObject {
                     property bool enable: true
                     property bool bottom: false
@@ -807,6 +872,16 @@ Singleton {
                     property bool showVolume: true
                     property bool showBrightness: true
                 }
+            }
+
+            property JsonObject widgetBar: JsonObject {
+                property bool enable: false // Disabled by default - use sidebar widgets tab instead
+                property int width: 320
+                property string position: "left" // "left" or "right"
+                property bool showMedia: true
+                property bool showWeather: true
+                property bool showCalendar: true
+                property bool showQuickNav: true
             }
 
             property JsonObject sounds: JsonObject {

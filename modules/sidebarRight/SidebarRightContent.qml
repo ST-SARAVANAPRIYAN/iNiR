@@ -26,6 +26,8 @@ Item {
     property int sidebarWidth: Appearance.sizes.sidebarWidth
     property int sidebarPadding: 10
     property string settingsQmlPath: Quickshell.shellPath("settings.qml")
+    property int screenWidth: 1920
+    property int screenHeight: 1080
     property bool showAudioOutputDialog: false
     property bool showAudioInputDialog: false
     property bool showBluetoothDialog: false
@@ -102,13 +104,15 @@ Item {
 
         Image {
             id: sidebarRightBlurredWallpaper
-            anchors.fill: parent
+            x: -(root.screenWidth - sidebarRightBackground.width - Appearance.sizes.hyprlandGapsOut)
+            y: -Appearance.sizes.hyprlandGapsOut
+            width: root.screenWidth ?? 1920
+            height: root.screenHeight ?? 1080
             visible: sidebarRightBackground.auroraEverywhere
             source: sidebarRightBackground.wallpaperUrl
             fillMode: Image.PreserveAspectCrop
             cache: true
             asynchronous: true
-            antialiasing: true
 
             layer.enabled: Appearance.effectsEnabled
             layer.effect: StyledBlurEffect {

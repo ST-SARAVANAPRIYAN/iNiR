@@ -210,6 +210,35 @@ ContentPage {
 
                 SettingsSwitch {
                     visible: Config.options.background.backdrop.enable
+                    buttonIcon: "blur_on"
+                    text: Translation.tr("Aurora glass effect")
+                    checked: Config.options.background.backdrop.useAuroraStyle
+                    onCheckedChanged: {
+                        Config.options.background.backdrop.useAuroraStyle = checked;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Use glass blur effect with adaptive colors from wallpaper (same as sidebars)")
+                    }
+                }
+
+                ConfigSpinBox {
+                    visible: Config.options.background.backdrop.enable && Config.options.background.backdrop.useAuroraStyle
+                    icon: "opacity"
+                    text: Translation.tr("Aurora overlay opacity (%)")
+                    value: Math.round((Config.options.background.backdrop.auroraOverlayOpacity) * 100)
+                    from: 0
+                    to: 200
+                    stepSize: 5
+                    onValueChanged: {
+                        Config.options.background.backdrop.auroraOverlayOpacity = value / 100.0;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Transparency of the color overlay on the blurred wallpaper")
+                    }
+                }
+
+                SettingsSwitch {
+                    visible: Config.options.background.backdrop.enable
                     buttonIcon: "visibility_off"
                     text: Translation.tr("Hide main wallpaper (show only backdrop)")
                     checked: Config.options.background.backdrop.hideWallpaper
@@ -784,12 +813,22 @@ ContentPage {
     SettingsCardSection {
         visible: root.isIiActive
         expanded: false
-        icon: "weather_mix"
+        icon: "cloud"
         title: Translation.tr("Widget: Weather")
 
         SettingsGroup {
+            StyledText {
+                Layout.fillWidth: true
+                visible: !(Config.options?.bar?.weather?.enable ?? false)
+                text: Translation.tr("Enable weather service first in Services → Weather")
+                color: Appearance.colors.colTertiary
+                font.pixelSize: Appearance.font.pixelSize.small
+                wrapMode: Text.WordWrap
+            }
+
             ConfigRow {
                 Layout.fillWidth: true
+                enabled: Config.options?.bar?.weather?.enable ?? false
 
                 SettingsSwitch {
                     Layout.fillWidth: false

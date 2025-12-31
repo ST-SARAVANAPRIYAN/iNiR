@@ -74,7 +74,10 @@ Scope {
                 }
             }
 
-            sourceComponent: SidebarRightContent {}
+            sourceComponent: SidebarRightContent {
+                screenWidth: sidebarRoot.screen?.width ?? 1920
+                screenHeight: sidebarRoot.screen?.height ?? 1080
+            }
         }
     }
 

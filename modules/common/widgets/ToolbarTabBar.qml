@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import qs.modules.common
 import qs.modules.common.models
+import qs.modules.common.functions
 import qs.services
 import QtQuick
 import QtQuick.Controls
@@ -68,23 +69,30 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 readonly property real padding: 4
                 implicitWidth: contentItem.implicitWidth + padding * 2
-                height: 40
+                height: Appearance.inirEverywhere ? 36 : 40
                 x: flick.contentWidth > flick.width ? 0 : Math.max(0, (flick.width - width) / 2)
 
                 Rectangle {
                     id: groupBackground
                     anchors.fill: parent
-                    radius: height / 2
-                    color: Appearance.colors.colSurfaceContainer
+                    radius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : height / 2
+                    color: Appearance.inirEverywhere ? "transparent" : Appearance.colors.colSurfaceContainer
+                    border.width: Appearance.inirEverywhere ? 1 : 0
+                    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
                 }
 
                 Rectangle {
                     id: activeIndicator
                     z: 1
-                    color: Appearance.colors.colSecondaryContainer
+                    color: Appearance.inirEverywhere ? ColorUtils.transparentize(Appearance.inir.colPrimary, 0.85) 
+                        : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface 
+                        : Appearance.colors.colSecondaryContainer
+                    border.width: Appearance.inirEverywhere ? 1 : 0
+                    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorderAccent : "transparent"
                     implicitWidth: targetItem ? targetItem.implicitWidth : 0
-                    implicitHeight: targetItem ? targetItem.implicitHeight : 0
-                    radius: height / 2
+                    implicitHeight: targetItem ? (Appearance.inirEverywhere ? 28 : targetItem.implicitHeight) : 0
+                    radius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : height / 2
+                    anchors.verticalCenter: parent.verticalCenter
                     // Animation
                     property Item targetItem: tabRepeater.itemAt(root.currentIndex)
                     AnimatedTabIndexPair {

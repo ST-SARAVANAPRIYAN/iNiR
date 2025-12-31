@@ -18,8 +18,12 @@ Rectangle {
 
     implicitWidth: contentItem.implicitWidth + root.horizontalPadding * 2
     implicitHeight: contentItem.implicitHeight + root.verticalPadding * 2
-    radius: Appearance.rounding.normal
-    color: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
+    radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.normal
+    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+         : Appearance.auroraEverywhere ? "transparent" 
+         : Appearance.colors.colLayer1
+    border.width: Appearance.inirEverywhere ? 1 : 0
+    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
     property real verticalPadding: 4
     property real horizontalPadding: 12
 

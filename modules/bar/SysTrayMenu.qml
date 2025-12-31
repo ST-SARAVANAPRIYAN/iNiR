@@ -100,10 +100,14 @@ PopupWindow {
                 margins: root.padding
             }
 
-            color: Appearance.colors.colLayer0
-            radius: Appearance.rounding.windowRounding
+            color: Appearance.inirEverywhere ? Appearance.inir.colLayer1 
+                : Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface 
+                : Appearance.colors.colLayer0
+            radius: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : Appearance.rounding.windowRounding
             border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder 
+                : Appearance.auroraEverywhere ? Appearance.aurora.colTooltipBorder 
+                : Appearance.colors.colLayer0Border
             clip: true
 
             opacity: 0

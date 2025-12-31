@@ -49,7 +49,7 @@ Scope { // Scope
             
             property bool extend: false
             property real sidebarWidth: sidebarRoot.extend ? Appearance.sizes.sidebarWidthExtended : Appearance.sizes.sidebarWidth
-            property var contentParent: sidebarLeftBackground
+            property var contentParent: sidebarLeftContentContainer
 
             function hide() {
                 GlobalStates.sidebarLeftOpen = false
@@ -74,7 +74,7 @@ Scope { // Scope
                 windows: [ sidebarRoot ]
                 active: CompositorService.isHyprland && sidebarRoot.visible
                 onActiveChanged: { // Focus the selected tab
-                    if (active) sidebarLeftBackground.children[0].focusActiveItem()
+                    if (active) sidebarLeftContentContainer.children[0]?.focusActiveItem?.()
                 }
                 onCleared: () => {
                     if (!active) sidebarRoot.hide()
@@ -139,13 +139,15 @@ Scope { // Scope
 
                 Image {
                     id: sidebarLeftBlurredWallpaper
-                    anchors.fill: parent
+                    x: -Appearance.sizes.hyprlandGapsOut
+                    y: -Appearance.sizes.hyprlandGapsOut
+                    width: sidebarRoot.screen?.width ?? 1920
+                    height: sidebarRoot.screen?.height ?? 1080
                     visible: sidebarLeftBackground.auroraEverywhere
                     source: sidebarLeftBackground.wallpaperUrl
                     fillMode: Image.PreserveAspectCrop
                     cache: true
                     asynchronous: true
-                    antialiasing: true
 
                     layer.enabled: Appearance.effectsEnabled
                     layer.effect: StyledBlurEffect {
@@ -156,6 +158,12 @@ Scope { // Scope
                         anchors.fill: parent
                         color: ColorUtils.transparentize((sidebarLeftBackground.blendedColors?.colLayer0 ?? Appearance.colors.colLayer0Base), Appearance.aurora.overlayTransparentize)
                     }
+                }
+
+                // Container for dynamic content
+                Item {
+                    id: sidebarLeftContentContainer
+                    anchors.fill: parent
                 }
 
                 Keys.onPressed: (event) => {
@@ -177,7 +185,7 @@ Scope { // Scope
             // Also focus active tab when the sidebar becomes visible (for compositors without CompositorFocusGrab)
             onVisibleChanged: {
                 if (visible && sidebarLeftBackground.children.length > 0) {
-                    Qt.callLater(() => sidebarLeftBackground.children[0].focusActiveItem());
+                    Qt.callLater(() => sidebarLeftContentContainer.children[0]?.focusActiveItem?.());
                 }
             }
         }

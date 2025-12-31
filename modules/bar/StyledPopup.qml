@@ -107,12 +107,16 @@ LazyLoader {
             }
             implicitWidth: root.contentItem.implicitWidth + margin * 2
             implicitHeight: root.contentItem.implicitHeight + margin * 2
-            color: Appearance.m3colors.m3surfaceContainer
-            radius: Appearance.rounding.small
+            color: Appearance.inirEverywhere ? Appearance.inir.colLayer2 
+                : Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface 
+                : Appearance.m3colors.m3surfaceContainer
+            radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.small
             children: [root.contentItem]
 
             border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder 
+                : Appearance.auroraEverywhere ? Appearance.aurora.colTooltipBorder 
+                : Appearance.colors.colLayer0Border
         }
 
         

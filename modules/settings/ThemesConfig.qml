@@ -102,6 +102,16 @@ ContentPage {
                     return;
                 }
 
+                if (styleId === "inir") {
+                    Config.options.dock.cardStyle = false;
+                    Config.options.sidebar.cardStyle = false;
+                    if (Config.options.bar.cornerStyle === 3) Config.options.bar.cornerStyle = 1;
+                    Config.options.bar.showBackground = true;
+                    Config.setNestedValue("bar.blurBackground.enabled", false)
+                    Config.setNestedValue("appearance.transparency.enable", false)
+                    return;
+                }
+
                 // material
                 Config.options.dock.cardStyle = false;
                 Config.options.sidebar.cardStyle = false;
@@ -120,13 +130,14 @@ ContentPage {
                 options: [
                     { displayName: Translation.tr("Material"), icon: "tune", value: "material" },
                     { displayName: Translation.tr("Cards"), icon: "branding_watermark", value: "cards" },
-                    { displayName: Translation.tr("Aurora"), icon: "blur_on", value: "aurora" }
+                    { displayName: Translation.tr("Aurora"), icon: "blur_on", value: "aurora" },
+                    { displayName: Translation.tr("Inir"), icon: "terminal", value: "inir" }
                 ]
             }
 
             StyledText {
                 Layout.fillWidth: true
-                text: Translation.tr("Material keeps the original surfaces. Cards enables rounded card containers everywhere. Aurora enables a wallpaper-tinted glass surface style across panels.")
+                text: Translation.tr("Material keeps the original surfaces. Cards enables rounded card containers everywhere. Aurora enables a wallpaper-tinted glass surface style across panels. Inir uses a TUI-inspired dark theme with accent-colored borders.")
                 color: Appearance.colors.colSubtext
                 font.pixelSize: Appearance.font.pixelSize.smaller
                 wrapMode: Text.WordWrap

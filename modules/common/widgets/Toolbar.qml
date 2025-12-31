@@ -20,7 +20,7 @@ Item {
     property alias radius: background.radius
 
     Loader {
-        active: root.enableShadow
+        active: root.enableShadow && !Appearance.auroraEverywhere
         anchors.fill: background
         sourceComponent: StyledRectangularShadow {
             target: background
@@ -31,7 +31,10 @@ Item {
     Rectangle {
         id: background
         anchors.fill: parent
-        color: Appearance.m3colors.m3surfaceContainer
+        color: Appearance.inirEverywhere ? "transparent" 
+             : Appearance.auroraEverywhere ? "transparent"
+             : Appearance.m3colors.m3surfaceContainer
+        border.width: 0
         implicitHeight: 56
         implicitWidth: toolbarLayout.implicitWidth + root.padding * 2
         radius: height / 2

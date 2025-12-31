@@ -150,10 +150,15 @@ Loader {
                 bottomMargin: root.popupAbove ? popupWindow.sourceEdgeMargin : (root.ambientShadowWidth + root.visualMargin)
                 topMargin: root.popupAbove ? (root.ambientShadowWidth + root.visualMargin) : popupWindow.sourceEdgeMargin
             }
-            color: Appearance.colors.colSurfaceContainer
-            radius: Appearance.rounding.normal
+            color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+                 : Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface 
+                 : Appearance.colors.colSurfaceContainer
+            radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.normal
             border.width: 1
-            border.color: Appearance.colors.colSurfaceContainerHighest
+            border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                        : Appearance.auroraEverywhere 
+                            ? ColorUtils.transparentize(Appearance.colors.colSurfaceContainerHighest, 0.3)
+                            : Appearance.colors.colSurfaceContainerHighest
 
             implicitWidth: menuColumn.implicitWidth + (root.padding * 2)
             implicitHeight: menuColumn.implicitHeight + (root.padding * 2)
@@ -174,7 +179,7 @@ Loader {
                                 Layout.bottomMargin: 2
                                 Layout.fillWidth: true
                                 implicitHeight: 1
-                                color: Appearance.colors.colOutlineVariant
+                                color: Appearance.inirEverywhere ? Appearance.inir.colBorderSubtle : Appearance.colors.colOutlineVariant
                             }
                         }
                         DelegateChoice {
@@ -187,10 +192,14 @@ Loader {
 
                                 implicitWidth: Math.max(140, menuRow.implicitWidth + 20)
                                 implicitHeight: 32
-                                buttonRadius: Appearance.rounding.small
+                                buttonRadius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.small
                                 colBackground: "transparent"
-                                colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.85)
-                                colRipple: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.7)
+                                colBackgroundHover: Appearance.inirEverywhere 
+                                    ? Appearance.inir.colLayer2Hover
+                                    : ColorUtils.transparentize(Appearance.colors.colPrimary, 0.85)
+                                colRipple: Appearance.inirEverywhere
+                                    ? Appearance.inir.colLayer2Active
+                                    : ColorUtils.transparentize(Appearance.colors.colPrimary, 0.7)
 
                                 onClicked: {
                                     if (modelData.action) modelData.action();
@@ -216,7 +225,7 @@ Loader {
                                             MaterialSymbol {
                                                 text: menuBtn.modelData.iconName ?? ""
                                                 iconSize: Appearance.font.pixelSize.normal
-                                                color: Appearance.m3colors.m3onSurface
+                                                color: Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.m3colors.m3onSurface
                                             }
                                         }
 
@@ -231,7 +240,7 @@ Loader {
 
                                     StyledText {
                                         text: menuBtn.modelData.text ?? ""
-                                        color: Appearance.m3colors.m3onSurface
+                                        color: Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.m3colors.m3onSurface
                                         font.pixelSize: Appearance.font.pixelSize.small
                                         Layout.fillWidth: true
                                         Layout.alignment: Qt.AlignVCenter

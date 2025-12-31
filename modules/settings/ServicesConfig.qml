@@ -329,41 +329,41 @@ ContentPage {
 
     SettingsCardSection {
         expanded: false
-        icon: "weather_mix"
+        icon: "cloud"
         title: Translation.tr("Weather")
 
         SettingsGroup {
             StyledText {
                 Layout.fillWidth: true
-                text: Translation.tr("Weather data is provided by Open-Meteo. Leave city empty to auto-detect from your IP address.")
+                text: Translation.tr("Location is detected automatically. Weather data provided by wttr.in.")
                 color: Appearance.colors.colOnSurfaceVariant
                 font.pixelSize: Appearance.font.pixelSize.small
                 wrapMode: Text.WordWrap
             }
 
-            MaterialTextArea {
-                Layout.fillWidth: true
-                placeholderText: Translation.tr("City (e.g. Buenos Aires, London, Tokyo)")
-                text: Config.options?.bar?.weather?.city ?? ""
-                wrapMode: TextEdit.Wrap
-                onTextChanged: Config.setNestedValue("bar.weather.city", text)
+            SettingsSwitch {
+                buttonIcon: "toggle_on"
+                text: Translation.tr("Enable weather service")
+                checked: Config.options?.bar?.weather?.enable ?? false
+                onCheckedChanged: Config.setNestedValue("bar.weather.enable", checked)
             }
 
-            ConfigRow {
-                SettingsSwitch {
-                    buttonIcon: "my_location"
-                    text: Translation.tr("Use GPS location")
-                    checked: Config.options?.bar?.weather?.enableGPS ?? false
-                    onCheckedChanged: Config.setNestedValue("bar.weather.enableGPS", checked)
-                    StyledToolTip {
-                        text: Translation.tr("Override city with GPS coordinates when available")
-                    }
-                }
-                SettingsSwitch {
-                    buttonIcon: "thermometer"
-                    text: Translation.tr("Use Fahrenheit (°F)")
-                    checked: Config.options?.bar?.weather?.useUSCS ?? false
-                    onCheckedChanged: Config.setNestedValue("bar.weather.useUSCS", checked)
+            SettingsSwitch {
+                buttonIcon: "view_timeline"
+                text: Translation.tr("Show in top bar")
+                checked: Config.options?.bar?.modules?.weather ?? false
+                onCheckedChanged: Config.setNestedValue("bar.modules.weather", checked)
+                enabled: Config.options?.bar?.weather?.enable ?? false
+            }
+
+            SettingsSwitch {
+                buttonIcon: "thermometer"
+                text: Translation.tr("Use Fahrenheit (°F)")
+                checked: Config.options?.bar?.weather?.useUSCS ?? false
+                onCheckedChanged: Config.setNestedValue("bar.weather.useUSCS", checked)
+                enabled: Config.options?.bar?.weather?.enable ?? false
+                StyledToolTip {
+                    text: Translation.tr("May take a moment to update")
                 }
             }
 
@@ -375,9 +375,7 @@ ContentPage {
                 to: 60
                 stepSize: 5
                 onValueChanged: Config.setNestedValue("bar.weather.fetchInterval", value)
-                StyledToolTip {
-                    text: Translation.tr("How often to check for new weather data from Open-Meteo")
-                }
+                enabled: Config.options?.bar?.weather?.enable ?? false
             }
         }
     }

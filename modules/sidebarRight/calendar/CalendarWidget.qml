@@ -87,11 +87,13 @@ Item {
                 downAction: () => {
                     monthShift--;
                 }
-                contentItem: MaterialSymbol {
-                    text: "chevron_left"
-                    iconSize: Appearance.font.pixelSize.larger
-                    horizontalAlignment: Text.AlignHCenter
-                    color: Appearance.colors.colOnLayer1
+                contentItem: Item {
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "chevron_left"
+                        iconSize: Appearance.font.pixelSize.larger
+                        color: Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer1
+                    }
                 }
             }
             CalendarHeaderButton {
@@ -99,11 +101,13 @@ Item {
                 downAction: () => {
                     monthShift++;
                 }
-                contentItem: MaterialSymbol {
-                    text: "chevron_right"
-                    iconSize: Appearance.font.pixelSize.larger
-                    horizontalAlignment: Text.AlignHCenter
-                    color: Appearance.colors.colOnLayer1
+                contentItem: Item {
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "chevron_right"
+                        iconSize: Appearance.font.pixelSize.larger
+                        color: Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer1
+                    }
                 }
             }
         }

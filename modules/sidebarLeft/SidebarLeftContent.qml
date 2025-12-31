@@ -20,7 +20,9 @@ Item {
     property bool animeEnabled: (Config.options?.policies?.weeb ?? 0) !== 0
     property bool animeCloset: (Config.options?.policies?.weeb ?? 0) === 2
     property bool wallhavenEnabled: Config.options.sidebar?.wallhaven?.enable !== false
+    property bool widgetsEnabled: Config.options?.sidebar?.widgets?.enable ?? true
     property var tabButtonList: [
+        ...(root.widgetsEnabled ? [{"icon": "widgets", "name": Translation.tr("Widgets")}] : []),
         ...(root.aiChatEnabled ? [{"icon": "neurology", "name": Translation.tr("Intelligence")}] : []),
         ...(root.translatorEnabled ? [{"icon": "translate", "name": Translation.tr("Translator")}] : []),
         ...((root.animeEnabled && !root.animeCloset) ? [{"icon": "bookmark_heart", "name": Translation.tr("Anime")}] : []),
@@ -49,10 +51,11 @@ Item {
         anchors {
             fill: parent
             margins: sidebarPadding
+            topMargin: Appearance.inirEverywhere ? sidebarPadding + 6 : sidebarPadding
             leftMargin: root.isDetached ? Math.max(sidebarPadding, (parent.width - root.maxContentWidth) / 2) : sidebarPadding
             rightMargin: root.isDetached ? Math.max(sidebarPadding, (parent.width - root.maxContentWidth) / 2) : sidebarPadding
         }
-        spacing: sidebarPadding
+        spacing: Appearance.inirEverywhere ? sidebarPadding + 4 : sidebarPadding
 
         Toolbar {
             Layout.alignment: Qt.AlignHCenter
@@ -71,14 +74,20 @@ Item {
             Layout.fillHeight: true
             implicitWidth: swipeView.implicitWidth
             implicitHeight: swipeView.implicitHeight
-            radius: Appearance.rounding.normal
-            color: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
+            radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.normal
+            color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                 : Appearance.auroraEverywhere ? "transparent" 
+                 : Appearance.colors.colLayer1
+            border.width: Appearance.inirEverywhere ? 1 : 0
+            border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
 
             SwipeView { // Content pages
                 id: swipeView
                 anchors.fill: parent
                 spacing: 10
                 currentIndex: tabBar.currentIndex
+                // Bloquear swipe cuando se está arrastrando un widget
+                interactive: !(currentItem?.editMode ?? false)
 
                 onCurrentIndexChanged: {
                     if (root.aiChatEnabled && swipeView.currentIndex === 0) {
@@ -97,7 +106,8 @@ Item {
                 }
 
                 contentChildren: [
-                    ...((root.aiChatEnabled || (!root.translatorEnabled && !root.animeEnabled && !root.wallhavenEnabled)) ? [aiChat.createObject()] : []),
+                    ...(root.widgetsEnabled ? [widgetsView.createObject()] : []),
+                    ...((root.aiChatEnabled || (!root.translatorEnabled && !root.animeEnabled && !root.wallhavenEnabled && !root.widgetsEnabled)) ? [aiChat.createObject()] : []),
                     ...(root.translatorEnabled ? [translator.createObject()] : []),
                     ...(root.animeEnabled ? [anime.createObject()] : []),
                     ...(root.wallhavenEnabled ? [wallhaven.createObject()] : [])
@@ -105,6 +115,10 @@ Item {
             }
         }
 
+        Component {
+            id: widgetsView
+            WidgetsView {}
+        }
         Component {
             id: aiChat
             AiChat {}

@@ -291,7 +291,7 @@ Item {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
                 }
                 clip: true
-                color: Appearance.colors.colSurfaceContainer
+                color: Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface : Appearance.colors.colSurfaceContainer
                 radius: Appearance.rounding.normal
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Appearance.sizes.elevationMargin
@@ -338,7 +338,7 @@ Item {
                                     contentWidth: parent.width - anchors.margins * 2
                                     WrapperRectangle {
                                         Layout.fillWidth: true
-                                        color: ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
+                                        color: Appearance.auroraEverywhere ? "transparent" : ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
                                         radius: Appearance.rounding.small
                                         margin: 5
                                         StyledText {
@@ -351,7 +351,7 @@ Item {
                                     }
                                     GroupButton {
                                         id: closeButton
-                                        colBackground: ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
+                                        colBackground: Appearance.auroraEverywhere ? "transparent" : ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
                                         baseWidth: windowControlsHeight
                                         baseHeight: windowControlsHeight
                                         buttonRadius: Appearance.rounding.full

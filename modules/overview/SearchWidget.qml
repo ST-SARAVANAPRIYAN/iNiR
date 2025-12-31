@@ -396,7 +396,7 @@ Item { // Wrapper
     StyledRectangularShadow {
         target: searchWidgetContent
     }
-    Rectangle { // Background
+    GlassBackground { // Background
         id: searchWidgetContent
         anchors {
             top: parent.top
@@ -407,7 +407,11 @@ Item { // Wrapper
         implicitWidth: columnLayout.implicitWidth
         implicitHeight: columnLayout.implicitHeight
         radius: searchBar.height / 2 + searchBar.verticalPadding
-        color: Appearance.colors.colBackgroundSurfaceContainer
+        fallbackColor: Appearance.colors.colBackgroundSurfaceContainer
+        inirColor: Appearance.inir.colLayer1
+        auroraTransparency: Appearance.aurora.popupTransparentize
+        border.width: auroraEverywhere || inirEverywhere ? 1 : 0
+        border.color: inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer0Border
 
         Behavior on implicitHeight {
             id: searchHeightBehavior

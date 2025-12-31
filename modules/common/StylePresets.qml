@@ -101,7 +101,7 @@ Singleton {
     function resetTypographyToDefaults() {
         Config.setNestedValue('appearance.typography.mainFont', "Roboto Flex")
         Config.setNestedValue('appearance.typography.titleFont', "Gabarito")
-        Config.setNestedValue('appearance.typography.monospaceFont', "JetBrains Mono NF")
+        Config.setNestedValue('appearance.typography.monospaceFont', "JetBrainsMono Nerd Font")
         Config.setNestedValue('appearance.typography.sizeScale', 1.0)
         Config.setNestedValue('appearance.typography.variableAxes.wght', 300)
         Config.setNestedValue('appearance.typography.variableAxes.wdth', 105)

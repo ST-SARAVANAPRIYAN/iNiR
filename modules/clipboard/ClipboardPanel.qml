@@ -244,10 +244,12 @@ Scope {
             anchors.centerIn: parent
             width: panelWidth
             height: Math.min(contentColumn.implicitHeight, panelMaxHeight)
-            color: Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface : Appearance.colors.colLayer1
+            color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                 : Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface 
+                 : Appearance.colors.colLayer1
             border.width: 1
-            border.color: Appearance.colors.colOutlineVariant
-            radius: Appearance.rounding.screenRounding
+            border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colOutlineVariant
+            radius: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : Appearance.rounding.screenRounding
             
             // Entry animation
             opacity: GlobalStates.clipboardOpen ? 1 : 0
@@ -394,7 +396,7 @@ Scope {
                     // Keep a sensible minimum height so single-result lists don't visually collapse
                     implicitHeight: Math.min(480, Math.max(160, listView.contentHeight + 20))
                     radius: Appearance.rounding.normal
-                    color: Appearance.colors.colLayer2
+                    color: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colLayer2
                     clip: true
 
                     ListView {

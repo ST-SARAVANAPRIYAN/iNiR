@@ -27,7 +27,8 @@ Rectangle {
     implicitHeight: columnLayout.implicitHeight + root.messagePadding * 2
 
     radius: Appearance.rounding.normal
-    color: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
+    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+        : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
 
     function saveMessage() {
         if (!root.editing) return;

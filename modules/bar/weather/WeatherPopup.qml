@@ -12,7 +12,7 @@ StyledPopup {
     ColumnLayout {
         id: columnLayout
         anchors.centerIn: parent
-        implicitWidth: Math.max(header.implicitWidth, gridLayout.implicitWidth, forecastRow.implicitWidth)
+        implicitWidth: Math.max(header.implicitWidth, gridLayout.implicitWidth)
         spacing: 8
 
         // Header
@@ -97,80 +97,6 @@ StyledPopup {
                 title: Translation.tr("Sunset")
                 symbol: "bedtime"
                 value: Weather.data.sunset
-            }
-        }
-        
-        // Forecast section
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: Appearance.colors.colLayer1
-            visible: Weather.forecast.length > 0
-        }
-        
-        RowLayout {
-            id: forecastRow
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 12
-            visible: Weather.forecast.length > 0
-            
-            Repeater {
-                model: Weather.forecast
-                
-                ColumnLayout {
-                    spacing: 4
-                    
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: {
-                            const d = new Date(modelData.date + "T12:00:00");
-                            const days = [Translation.tr("Sun"), Translation.tr("Mon"), Translation.tr("Tue"), 
-                                         Translation.tr("Wed"), Translation.tr("Thu"), Translation.tr("Fri"), Translation.tr("Sat")];
-                            return days[d.getDay()];
-                        }
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        font.weight: Font.Medium
-                        color: Appearance.colors.colOnSurfaceVariant
-                    }
-                    
-                    MaterialSymbol {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: Icons.getWeatherIcon(modelData.wCode, false)
-                        iconSize: Appearance.font.pixelSize.larger
-                        color: Appearance.colors.colOnLayer1
-                    }
-                    
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: modelData.tempMax
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: Appearance.colors.colOnLayer1
-                    }
-                    
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: modelData.tempMin
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colSubtext
-                    }
-                    
-                    RowLayout {
-                        Layout.alignment: Qt.AlignHCenter
-                        spacing: 2
-                        visible: modelData.chanceOfRain > 0
-                        
-                        MaterialSymbol {
-                            text: "water_drop"
-                            iconSize: Appearance.font.pixelSize.smallest
-                            color: Appearance.colors.colPrimary
-                        }
-                        StyledText {
-                            text: modelData.chanceOfRain + "%"
-                            font.pixelSize: Appearance.font.pixelSize.smallest
-                            color: Appearance.colors.colPrimary
-                        }
-                    }
-                }
             }
         }
     }

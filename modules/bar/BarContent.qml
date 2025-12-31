@@ -21,7 +21,7 @@ Item { // Bar content region
     readonly property int centerSideModuleWidth: (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened : (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : Appearance.sizes.barCenterSideModuleWidth
     readonly property bool cardStyleEverywhere: (Config.options?.dock?.cardStyle ?? false) && (Config.options?.sidebar?.cardStyle ?? false) && (Config.options?.bar?.cornerStyle === 3)
     readonly property color separatorColor: Appearance.colors.colOutlineVariant
-    readonly property bool blurBackground: Config.options?.bar?.blurBackground?.enabled ?? false
+    readonly property bool blurBackground: Appearance.auroraEverywhere || (Config.options?.bar?.blurBackground?.enabled ?? false)
 
     readonly property string wallpaperUrl: Wallpapers.effectiveWallpaperUrl
 
@@ -37,17 +37,19 @@ Item { // Bar content region
         color: ColorUtils.mix(root.wallpaperDominantColor, Appearance.colors.colPrimaryContainer, 0.8) || Appearance.m3colors.m3secondaryContainer
     }
 
+    readonly property bool inirEverywhere: Appearance.inirEverywhere
+
     component VerticalBarSeparator: Rectangle {
         Layout.topMargin: Appearance.sizes.baseBarHeight / 3
         Layout.bottomMargin: Appearance.sizes.baseBarHeight / 3
         Layout.fillHeight: true
         implicitWidth: 1
-        color: root.separatorColor
+        color: root.inirEverywhere ? Appearance.inir.colBorderSubtle : root.separatorColor
     }
 
     // Background shadow
     Loader {
-        active: Config.options.bar.showBackground && (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) && Config.options.bar.floatStyleShadow
+        active: !root.inirEverywhere && Config.options.bar.showBackground && (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) && Config.options.bar.floatStyleShadow
         anchors.fill: barBackground
         sourceComponent: StyledRectangularShadow {
             anchors.fill: undefined // The loader's anchors act on this, and this should not have any anchor
@@ -59,17 +61,25 @@ Item { // Bar content region
         id: barBackground
         anchors {
             fill: parent
-            margins: (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? (Appearance.sizes.hyprlandGapsOut) : 0 // idk why but +1 is needed
+            margins: (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? (Appearance.sizes.hyprlandGapsOut) : 0
         }
-        color: root.blurBackground ? ColorUtils.applyAlpha((root.blendedColors?.colLayer0 ?? Appearance.colors.colLayer0), 1)
+        readonly property bool auroraEverywhere: Appearance.auroraEverywhere
+        readonly property real barMargin: (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? Appearance.sizes.hyprlandGapsOut : 0
+        readonly property bool isBottom: Config.options?.bar?.bottom ?? false
+
+        readonly property QtObject blendedColors: root.blendedColors
+        
+        color: root.inirEverywhere ? Appearance.inir.colLayer0
+            : auroraEverywhere ? ColorUtils.applyAlpha((blendedColors?.colLayer0 ?? Appearance.colors.colLayer0), 1)
             : (!Config.options.bar.showBackground ? "transparent" : (root.cardStyleEverywhere ? Appearance.colors.colLayer1 : (Config.options.bar.cornerStyle === 3 ? Appearance.colors.colLayer1 : Appearance.colors.colLayer0)))
-        radius: (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? (Config.options.bar.cornerStyle === 3 ? Appearance.rounding.normal : Appearance.rounding.windowRounding) : 0
-        border.width: ((Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? 1 : 0)
-        border.color: Appearance.colors.colLayer0Border
+        radius: root.inirEverywhere ? Appearance.inir.roundingNormal
+            : (Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? (Config.options.bar.cornerStyle === 3 ? Appearance.rounding.normal : Appearance.rounding.windowRounding) : 0
+        border.width: root.inirEverywhere ? 1 : ((Config.options.bar.cornerStyle === 1 || Config.options.bar.cornerStyle === 3) ? 1 : 0)
+        border.color: root.inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer0Border
 
         clip: true
 
-        layer.enabled: root.blurBackground
+        layer.enabled: auroraEverywhere && !root.inirEverywhere
         layer.effect: GE.OpacityMask {
             maskSource: Rectangle {
                 width: barBackground.width
@@ -80,13 +90,15 @@ Item { // Bar content region
 
         Image {
             id: blurredWallpaper
-            anchors.fill: parent
-            visible: root.blurBackground
+            x: -barBackground.barMargin
+            y: barBackground.isBottom ? -(root.screen?.height ?? 1080) + barBackground.height + barBackground.barMargin : -barBackground.barMargin
+            width: root.screen?.width ?? 1920
+            height: root.screen?.height ?? 1080
+            visible: barBackground.auroraEverywhere && !root.inirEverywhere
             source: root.wallpaperUrl
             fillMode: Image.PreserveAspectCrop
             cache: true
             asynchronous: true
-            antialiasing: true
 
             layer.enabled: Appearance.effectsEnabled
             layer.effect: StyledBlurEffect {
@@ -95,7 +107,7 @@ Item { // Bar content region
 
             Rectangle {
                 anchors.fill: parent
-                color: ColorUtils.transparentize((root.blendedColors?.colLayer0 ?? Appearance.colors.colLayer0Base), (Config.options?.bar?.blurBackground?.overlayOpacity ?? Appearance.aurora.overlayTransparentize))
+                color: ColorUtils.transparentize((barBackground.blendedColors?.colLayer0 ?? Appearance.colors.colLayer0Base), Appearance.aurora.overlayTransparentize)
             }
         }
     }
@@ -142,7 +154,9 @@ Item { // Bar content region
             LeftSidebarButton { // Left sidebar button
                 visible: Config.options.bar.modules.leftSidebarButton
                 Layout.alignment: Qt.AlignVCenter
-                colBackground: barLeftSideMouseArea.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
+                colBackground: barLeftSideMouseArea.hovered 
+                    ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1Hover) 
+                    : "transparent"
             }
 
             ActiveWindow {
@@ -293,12 +307,14 @@ Item { // Bar content region
                 implicitHeight: indicatorsRowLayout.implicitHeight + 5 * 2
 
                 buttonRadius: Appearance.rounding.full
-                colBackground: barRightSideMouseArea.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
-                colBackgroundHover: Appearance.colors.colLayer1Hover
-                colRipple: Appearance.colors.colLayer1Active
-                colBackgroundToggled: Appearance.colors.colSecondaryContainer
-                colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
-                colRippleToggled: Appearance.colors.colSecondaryContainerActive
+                colBackground: barRightSideMouseArea.hovered 
+                    ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1Hover) 
+                    : "transparent"
+                colBackgroundHover: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1Hover
+                colRipple: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colLayer1Active
+                colBackgroundToggled: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colSecondaryContainer
+                colBackgroundToggledHover: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurfaceHover : Appearance.colors.colSecondaryContainerHover
+                colRippleToggled: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colSecondaryContainerActive
                 toggled: GlobalStates.sidebarRightOpen
                 property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
 

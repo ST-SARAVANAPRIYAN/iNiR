@@ -90,6 +90,7 @@ Scope { // Scope
                             id: dockVisualBackground
                             property bool cardStyle: Config.options.dock.cardStyle
                             readonly property bool auroraEverywhere: Appearance.auroraEverywhere
+                            readonly property bool inirEverywhere: Appearance.inirEverywhere
                             readonly property string wallpaperUrl: Wallpapers.effectiveWallpaperUrl
 
                             ColorQuantizer {
@@ -111,19 +112,20 @@ Scope { // Scope
                             // Solid vs glassy style depending on setting
                             visible: Config.options.dock.showBackground || Config.options.dock.enableBlurGlass || auroraEverywhere
                             color: auroraEverywhere ? ColorUtils.applyAlpha((blendedColors?.colLayer0 ?? Appearance.colors.colLayer0), 1)
+                                : inirEverywhere ? Appearance.inir.colLayer1
                                 : (Config.options.dock.showBackground
                                     ? (cardStyle ? Appearance.colors.colLayer1 : Appearance.colors.colLayer0)
                                     : Qt.rgba(Appearance.colors.colLayer0.r,
                                               Appearance.colors.colLayer0.g,
                                               Appearance.colors.colLayer0.b,
                                               0.22))
-                            border.width: (Config.options.dock.showBackground || auroraEverywhere) ? 1 : 0
-                            border.color: Appearance.colors.colLayer0Border
-                            radius: cardStyle ? Appearance.rounding.normal : Appearance.rounding.large
+                            border.width: inirEverywhere ? 1 : (Config.options.dock.showBackground || auroraEverywhere) ? 1 : 0
+                            border.color: inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer0Border
+                            radius: inirEverywhere ? Appearance.inir.roundingNormal : cardStyle ? Appearance.rounding.normal : Appearance.rounding.large
 
                             clip: true
 
-                            layer.enabled: auroraEverywhere
+                            layer.enabled: auroraEverywhere && !inirEverywhere
                             layer.effect: GE.OpacityMask {
                                 maskSource: Rectangle {
                                     width: dockVisualBackground.width
@@ -134,13 +136,15 @@ Scope { // Scope
 
                             Image {
                                 id: dockBlurredWallpaper
-                                anchors.fill: parent
-                                visible: dockVisualBackground.auroraEverywhere
+                                x: -(dockRoot.screen?.width ?? 1920) / 2 + dockVisualBackground.width / 2
+                                y: -(dockRoot.screen?.height ?? 1080) + dockVisualBackground.height + Appearance.sizes.hyprlandGapsOut
+                                width: dockRoot.screen?.width ?? 1920
+                                height: dockRoot.screen?.height ?? 1080
+                                visible: dockVisualBackground.auroraEverywhere && !dockVisualBackground.inirEverywhere
                                 source: dockVisualBackground.wallpaperUrl
                                 fillMode: Image.PreserveAspectCrop
                                 cache: true
                                 asynchronous: true
-                                antialiasing: true
 
                                 layer.enabled: Appearance.effectsEnabled
                                 layer.effect: StyledBlurEffect {

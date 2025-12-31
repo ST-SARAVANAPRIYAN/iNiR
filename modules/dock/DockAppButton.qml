@@ -266,7 +266,7 @@ DockButton {
                     ColorOverlay {
                         anchors.fill: desaturatedIcon
                         source: desaturatedIcon
-                        color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.9)
+                        color: ColorUtils.transparentize(Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary, 0.9)
                     }
                 }
             }
@@ -316,8 +316,8 @@ DockButton {
                             implicitWidth: isFocusedWindow ? root.countDotWidth : root.countDotHeight
                             implicitHeight: root.countDotHeight
                             color: isFocusedWindow 
-                                   ? Appearance.colors.colPrimary 
-                                   : ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.5)
+                                   ? (Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary)
+                                   : ColorUtils.transparentize(Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer0, 0.5)
                             
                             Behavior on implicitWidth { 
                                 NumberAnimation { duration: 120; easing.type: Easing.OutQuad } 
@@ -331,7 +331,7 @@ DockButton {
                         width: 5
                         height: 5
                         radius: 2.5
-                        color: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.5)
+                        color: ColorUtils.transparentize(Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer0, 0.5)
                     }
                 }
             }

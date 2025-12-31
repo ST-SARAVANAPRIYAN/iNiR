@@ -99,7 +99,8 @@ Item {
                 width: lapsList.width
                 implicitHeight: lapRow.implicitHeight + verticalPadding * 2
                 implicitWidth: lapRow.implicitWidth + horizontalPadding * 2
-                color: Appearance.colors.colLayer2
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+                    : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colLayer2
                 radius: Appearance.rounding.small
 
                 RowLayout {
@@ -192,9 +193,15 @@ Item {
                 }
                 enabled: TimerService.stopwatchTime > 0 || Persistent.states.timer.stopwatch.laps.length > 0
 
-                colBackground: TimerService.stopwatchRunning ? Appearance.colors.colLayer2 : Appearance.colors.colErrorContainer
-                colBackgroundHover: TimerService.stopwatchRunning ? Appearance.colors.colLayer2Hover : Appearance.colors.colErrorContainerHover
-                colRipple: TimerService.stopwatchRunning ? Appearance.colors.colLayer2Active : Appearance.colors.colErrorContainerActive
+                colBackground: TimerService.stopwatchRunning 
+                    ? (Appearance.auroraEverywhere ? "transparent" : Appearance.colors.colLayer2) 
+                    : Appearance.colors.colErrorContainer
+                colBackgroundHover: TimerService.stopwatchRunning 
+                    ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer2Hover) 
+                    : Appearance.colors.colErrorContainerHover
+                colRipple: TimerService.stopwatchRunning 
+                    ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colLayer2Active) 
+                    : Appearance.colors.colErrorContainerActive
 
                 contentItem: StyledText {
                     horizontalAlignment: Text.AlignHCenter

@@ -112,16 +112,11 @@ ContentPage {
 
             SettingsDivider {}
 
-            SettingsSwitch {
-                buttonIcon: "cloud"
-                text: Translation.tr("Weather")
-                checked: Config.options.bar.modules.weather
-                onCheckedChanged: {
-                    Config.options.bar.modules.weather = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Show current weather conditions in the bar")
-                }
+            StyledText {
+                Layout.fillWidth: true
+                text: Translation.tr("Weather settings are in Services → Weather")
+                color: Appearance.colors.colSubtext
+                font.pixelSize: Appearance.font.pixelSize.smaller
             }
         }
     }
@@ -434,30 +429,6 @@ ContentPage {
                         text: Translation.tr("Open quick notepad")
                     }
                 }
-            }
-        }
-    }
-
-    SettingsCardSection {
-        visible: root.isIiActive
-        expanded: false
-        icon: "cloud"
-        title: Translation.tr("Weather")
-        
-        SettingsGroup {
-            SettingsSwitch {
-                buttonIcon: "check"
-                text: Translation.tr("Show in bar")
-                checked: Config.options?.bar?.weather?.enable ?? false
-                onCheckedChanged: Config.setNestedValue("bar.weather.enable", checked)
-            }
-            
-            StyledText {
-                Layout.fillWidth: true
-                text: Translation.tr("Configure city, units and update interval in Services → Weather")
-                color: Appearance.colors.colOnSurfaceVariant
-                font.pixelSize: Appearance.font.pixelSize.small
-                wrapMode: Text.WordWrap
             }
         }
     }

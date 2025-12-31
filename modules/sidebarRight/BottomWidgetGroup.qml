@@ -11,8 +11,12 @@ import QtQuick.Layouts
 
 Rectangle {
     id: root
-    radius: Appearance.rounding.normal
-    color: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
+    radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.normal
+    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+         : Appearance.auroraEverywhere ? "transparent" 
+         : Appearance.colors.colLayer1
+    border.width: Appearance.inirEverywhere ? 1 : 0
+    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
     clip: true
     implicitHeight: collapsed ? collapsedBottomWidgetGroupRow.implicitHeight : bottomWidgetGroupRow.implicitHeight
     property int selectedTab: Persistent.states?.sidebar?.bottomGroup?.tab ?? 0
@@ -99,11 +103,13 @@ Rectangle {
             downAction: () => {
                 root.setCollapsed(false)
             }
-            contentItem: MaterialSymbol {
-                text: "keyboard_arrow_up"
-                iconSize: Appearance.font.pixelSize.larger
-                horizontalAlignment: Text.AlignHCenter
-                color: Appearance.colors.colOnLayer1
+            contentItem: Item {
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "keyboard_arrow_up"
+                    iconSize: Appearance.font.pixelSize.larger
+                    color: Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer1
+                }
             }
         }
 
@@ -173,11 +179,13 @@ Rectangle {
                 downAction: () => {
                     root.setCollapsed(true)
                 }
-                contentItem: MaterialSymbol {
-                    text: "keyboard_arrow_down"
-                    iconSize: Appearance.font.pixelSize.larger
-                    horizontalAlignment: Text.AlignHCenter
-                    color: Appearance.colors.colOnLayer1
+                contentItem: Item {
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "keyboard_arrow_down"
+                        iconSize: Appearance.font.pixelSize.larger
+                        color: Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer1
+                    }
                 }
             }
         }

@@ -22,10 +22,13 @@ Item {
             rightMargin: root.vertical ? 4 : 0
         }
         color: (Config.options?.bar?.borderless ?? false) ? "transparent"
-            : (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1)
-        border.width: root.cardStyleEverywhere ? 1 : 0
-        border.color: Appearance.colors.colLayer0Border
-        radius: root.cardStyleEverywhere ? Appearance.rounding.normal : Appearance.rounding.small
+            : (Appearance.inirEverywhere ? Appearance.inir.colLayer1
+              : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface 
+              : Appearance.colors.colLayer1)
+        border.width: Appearance.inirEverywhere ? 1 : (root.cardStyleEverywhere ? 1 : 0)
+        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer0Border
+        radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal 
+              : (root.cardStyleEverywhere ? Appearance.rounding.normal : Appearance.rounding.small)
     }
 
     GridLayout {

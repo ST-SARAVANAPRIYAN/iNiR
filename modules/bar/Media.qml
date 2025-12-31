@@ -56,10 +56,14 @@ Item {
                 anchors.centerIn: parent
                 width: volumeRow.width + 12
                 height: volumeRow.height + 8
-                radius: Appearance.rounding.verysmall
-                color: Appearance.colors.colLayer3
+                radius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.verysmall
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+                     : Appearance.auroraEverywhere ? Appearance.aurora.colTooltipSurface 
+                     : Appearance.colors.colLayer3
                 border.width: 1
-                border.color: Appearance.colors.colLayer3Hover
+                border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colTooltipBorder 
+                            : Appearance.colors.colLayer3Hover
 
                 Row {
                     id: volumeRow

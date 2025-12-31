@@ -52,7 +52,8 @@ Item {
 
             Rectangle {
                 radius: Appearance.rounding.full
-                color: Appearance.colors.colLayer2
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+                    : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colLayer2
                 
                 anchors {
                     right: parent.right

@@ -342,24 +342,27 @@ Scope {
                 visible: !root.compactStyle && !root.listStyle
                 z: 0
                 anchors.fill: parent
-                radius: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+                radius: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : (Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1)
                 color: {
+                    if (Appearance.inirEverywhere)
+                        return Appearance.inir.colLayer0
                     if (root.altUseM3Layout)
                         return Appearance.colors.colLayer0
                     const base = ColorUtils.mix(Appearance.colors.colLayer0, Qt.rgba(0, 0, 0, 1), 0.35)
                     return ColorUtils.applyAlpha(base, root.altBackgroundOpacity)
                 }
-                border.width: root.altUseM3Layout ? 1 : 0
-                border.color: Appearance.colors.colLayer0Border
+                border.width: Appearance.inirEverywhere ? 1 : (root.altUseM3Layout ? 1 : 0)
+                border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer0Border
             }
 
             Rectangle {
                 id: compactBackground
                 visible: root.compactStyle
                 anchors.fill: parent
-                radius: Appearance.rounding.large
-                color: Appearance.m3colors.m3surfaceContainerHigh
-                border.width: 0
+                radius: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : Appearance.rounding.large
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer2 : Appearance.m3colors.m3surfaceContainerHigh
+                border.width: Appearance.inirEverywhere ? 1 : 0
+                border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
             }
 
             StyledRectangularShadow {
@@ -439,7 +442,7 @@ Scope {
                                     ColorOverlay {
                                         anchors.fill: desaturatedCompactIcon
                                         source: desaturatedCompactIcon
-                                        color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.9)
+                                        color: ColorUtils.transparentize(Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary, 0.9)
                                     }
                                 }
                             }
@@ -452,7 +455,7 @@ Scope {
                                 width: 24
                                 height: 3
                                 radius: height / 2
-                                color: Appearance.m3colors.m3primary
+                                color: Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.m3colors.m3primary
                             }
                         }
                         
@@ -479,8 +482,8 @@ Scope {
                 anchors.centerIn: parent
                 width: 400
                 implicitHeight: listHeader.height + listSeparator.height + listColumn.height
-                radius: Appearance.rounding.large
-                color: Appearance.colors.colSurfaceContainer
+                radius: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : Appearance.rounding.large
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer1 : Appearance.colors.colSurfaceContainer
 
                 StyledRectangularShadow {
                     target: listContent

@@ -152,8 +152,14 @@ MouseArea {
         radius: height / 2
         color: {
             if (root.paused)
-                return root.containsMouse ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer2
-            return root.containsMouse ? Appearance.colors.colLayer1Hover : Appearance.colors.colLayer1
+                return root.containsMouse 
+                    ? (Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover 
+                        : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer2Hover) 
+                    : (Appearance.auroraEverywhere ? "transparent" : Appearance.colors.colLayer2)
+            return root.containsMouse 
+                ? (Appearance.inirEverywhere ? Appearance.inir.colLayer1Hover 
+                    : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1Hover) 
+                : (Appearance.auroraEverywhere ? "transparent" : Appearance.colors.colLayer1)
         }
         visible: root.anyActive || root.showPinnedIdle
 
@@ -171,7 +177,7 @@ MouseArea {
         MaterialSymbol {
             text: root.showPinnedIdle ? "schedule" : root.iconName
             iconSize: Appearance.font.pixelSize.normal
-            color: root.paused ? Appearance.colors.colOnLayer1Inactive : root.accentColor
+            color: root.paused ? Appearance.inirEverywhere ? Appearance.inir.colTextMuted : Appearance.colors.colOnLayer1Inactive : root.accentColor
             Layout.alignment: Qt.AlignVCenter
 
             SequentialAnimation on opacity {
@@ -185,7 +191,7 @@ MouseArea {
         StyledText {
             text: root.showPinnedIdle ? Translation.tr("Timer") : root.timeText
             font.pixelSize: Appearance.font.pixelSize.small
-            color: root.paused ? Appearance.colors.colOnLayer1Inactive : Appearance.colors.colOnLayer1
+            color: root.paused ? Appearance.inirEverywhere ? Appearance.inir.colTextMuted : Appearance.colors.colOnLayer1Inactive : Appearance.colors.colOnLayer1
             Layout.alignment: Qt.AlignVCenter
         }
 
@@ -193,7 +199,7 @@ MouseArea {
             visible: root.paused
             text: "pause"
             iconSize: Appearance.font.pixelSize.small
-            color: Appearance.colors.colOnLayer1Inactive
+            color: Appearance.inirEverywhere ? Appearance.inir.colTextMuted : Appearance.colors.colOnLayer1Inactive
             Layout.alignment: Qt.AlignVCenter
         }
     }

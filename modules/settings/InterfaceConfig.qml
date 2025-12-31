@@ -1194,6 +1194,399 @@ ContentPage {
     }
 
     SettingsCardSection {
+        visible: root.isIiActive
+        expanded: false
+        icon: "widgets"
+        title: Translation.tr("Widgets")
+
+        SettingsGroup {
+            ContentSubsection {
+                title: Translation.tr("Visibility")
+                tooltip: Translation.tr("Toggle which widgets appear in the sidebar")
+
+                SettingsSwitch {
+                    buttonIcon: "music_note"
+                    text: Translation.tr("Media player")
+                    checked: Config.options?.sidebar?.widgets?.media ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.media", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "calendar_today"
+                    text: Translation.tr("Week strip")
+                    checked: Config.options?.sidebar?.widgets?.week ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.week", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "partly_cloudy_day"
+                    text: Translation.tr("Context card (Weather/Timer)")
+                    checked: Config.options?.sidebar?.widgets?.context ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.context", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "edit_note"
+                    text: Translation.tr("Quick note")
+                    checked: Config.options?.sidebar?.widgets?.note ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.note", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "apps"
+                    text: Translation.tr("Quick launch")
+                    checked: Config.options?.sidebar?.widgets?.launch ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.launch", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "toggle_on"
+                    text: Translation.tr("Controls")
+                    checked: Config.options?.sidebar?.widgets?.controls ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controls", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "monitoring"
+                    text: Translation.tr("System status")
+                    checked: Config.options?.sidebar?.widgets?.status ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.status", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "currency_bitcoin"
+                    text: Translation.tr("Crypto prices")
+                    checked: Config.options?.sidebar?.widgets?.crypto ?? false
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.crypto", checked)
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Layout")
+
+                ConfigSpinBox {
+                    icon: "format_line_spacing"
+                    text: Translation.tr("Widget spacing")
+                    value: Config.options?.sidebar?.widgets?.spacing ?? 8
+                    from: 0
+                    to: 24
+                    stepSize: 2
+                    onValueChanged: Config.setNestedValue("sidebar.widgets.spacing", value)
+                    StyledToolTip {
+                        text: Translation.tr("Space between widgets in pixels")
+                    }
+                }
+
+                NoticeBox {
+                    Layout.fillWidth: true
+                    materialIcon: "drag_indicator"
+                    text: Translation.tr("Ctrl+Click on any widget to reorder")
+                }
+            }
+
+            ContentSubsection {
+                id: cryptoSection
+                title: Translation.tr("Crypto Widget")
+                tooltip: Translation.tr("Configure cryptocurrencies to track")
+                visible: Config.options?.sidebar?.widgets?.crypto ?? false
+
+                readonly property var popularCoins: [
+                    "bitcoin", "ethereum", "solana", "cardano", "dogecoin", "ripple",
+                    "polkadot", "litecoin", "monero", "toncoin", "avalanche-2", "chainlink",
+                    "uniswap", "stellar", "binancecoin", "tron", "shiba-inu", "pepe"
+                ]
+
+                function addCoin(coinId) {
+                    const id = coinId.toLowerCase().trim()
+                    if (!id) return
+                    const current = Config.options?.sidebar?.widgets?.crypto_settings?.coins ?? []
+                    if (current.includes(id)) return
+                    Config.setNestedValue("sidebar.widgets.crypto_settings.coins", [...current, id])
+                    coinInput.text = ""
+                    coinPopup.close()
+                }
+
+                function removeCoin(coinId) {
+                    const current = Config.options?.sidebar?.widgets?.crypto_settings?.coins ?? []
+                    Config.setNestedValue("sidebar.widgets.crypto_settings.coins", current.filter(c => c !== coinId))
+                }
+
+                function filteredCoins() {
+                    const q = coinInput.text.toLowerCase().trim()
+                    const current = Config.options?.sidebar?.widgets?.crypto_settings?.coins ?? []
+                    return popularCoins.filter(c => !current.includes(c) && c.includes(q))
+                }
+
+                ConfigSpinBox {
+                    icon: "schedule"
+                    text: Translation.tr("Refresh interval (seconds)")
+                    value: Config.options?.sidebar?.widgets?.crypto_settings?.refreshInterval ?? 60
+                    from: 30
+                    to: 300
+                    stepSize: 30
+                    onValueChanged: Config.setNestedValue("sidebar.widgets.crypto_settings.refreshInterval", value)
+                }
+
+                // Coin input with autocomplete
+                Item {
+                    Layout.fillWidth: true
+                    implicitHeight: coinInput.implicitHeight
+
+                    TextField {
+                        id: coinInput
+                        width: parent.width
+                        placeholderText: Translation.tr("Type to search coins...")
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3onSurface
+                        placeholderTextColor: Appearance.colors.colSubtext
+                        background: Rectangle {
+                            color: Appearance.colors.colLayer1
+                            radius: Appearance.rounding.small
+                            border.width: coinInput.activeFocus ? 2 : 1
+                            border.color: coinInput.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colLayer0Border
+                        }
+                        onTextChanged: {
+                            if (text.length > 0) coinPopup.open()
+                            else coinPopup.close()
+                        }
+                        onAccepted: {
+                            const filtered = cryptoSection.filteredCoins()
+                            if (filtered.length > 0) cryptoSection.addCoin(filtered[0])
+                            else if (text.trim()) cryptoSection.addCoin(text)
+                        }
+                        Keys.onDownPressed: coinList.incrementCurrentIndex()
+                        Keys.onUpPressed: coinList.decrementCurrentIndex()
+                    }
+
+                    Popup {
+                        id: coinPopup
+                        y: coinInput.height + 4
+                        width: coinInput.width
+                        height: Math.min(200, coinList.contentHeight + 16)
+                        padding: 8
+                        visible: coinInput.text.length > 0 && cryptoSection.filteredCoins().length > 0
+
+                        background: Rectangle {
+                            color: Appearance.colors.colLayer2
+                            radius: Appearance.rounding.small
+                            border.width: 1
+                            border.color: Appearance.colors.colLayer0Border
+                        }
+
+                        ListView {
+                            id: coinList
+                            anchors.fill: parent
+                            model: cryptoSection.filteredCoins()
+                            clip: true
+                            currentIndex: 0
+
+                            delegate: RippleButton {
+                                id: coinDelegate
+                                required property string modelData
+                                required property int index
+                                width: coinList.width
+                                implicitHeight: 32
+                                buttonRadius: Appearance.rounding.small
+                                colBackground: coinList.currentIndex === index ? Appearance.colors.colLayer1Hover : "transparent"
+                                colBackgroundHover: Appearance.colors.colLayer1Hover
+                                onClicked: cryptoSection.addCoin(modelData)
+
+                                contentItem: StyledText {
+                                    text: coinDelegate.modelData
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    font.family: Appearance.font.family.monospace
+                                    color: Appearance.colors.colOnLayer1
+                                    leftPadding: 8
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Coin chips
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    visible: (Config.options?.sidebar?.widgets?.crypto_settings?.coins ?? []).length > 0
+
+                    Repeater {
+                        model: Config.options?.sidebar?.widgets?.crypto_settings?.coins ?? []
+
+                        Rectangle {
+                            id: coinChip
+                            required property string modelData
+                            width: chipRow.implicitWidth + 8
+                            height: 26
+                            radius: 13
+                            color: chipMouse.containsMouse ? Appearance.colors.colSecondaryContainerHover : Appearance.colors.colSecondaryContainer
+
+                            RowLayout {
+                                id: chipRow
+                                anchors.centerIn: parent
+                                spacing: 2
+
+                                StyledText {
+                                    text: coinChip.modelData
+                                    font.pixelSize: Appearance.font.pixelSize.smallest
+                                    font.family: Appearance.font.family.monospace
+                                    color: Appearance.colors.colOnSecondaryContainer
+                                }
+
+                                MaterialSymbol {
+                                    text: "close"
+                                    iconSize: 12
+                                    color: Appearance.colors.colOnSecondaryContainer
+                                    opacity: chipMouse.containsMouse ? 1 : 0.5
+                                }
+                            }
+
+                            MouseArea {
+                                id: chipMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: cryptoSection.removeCoin(coinChip.modelData)
+                            }
+                        }
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Glance Header")
+                tooltip: Translation.tr("Configure the header with time and quick indicators")
+
+                SettingsSwitch {
+                    buttonIcon: "volume_up"
+                    text: Translation.tr("Volume button")
+                    checked: Config.options?.sidebar?.widgets?.glance?.showVolume ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.glance.showVolume", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "sports_esports"
+                    text: Translation.tr("Game mode indicator")
+                    checked: Config.options?.sidebar?.widgets?.glance?.showGameMode ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.glance.showGameMode", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "do_not_disturb_on"
+                    text: Translation.tr("Do not disturb indicator")
+                    checked: Config.options?.sidebar?.widgets?.glance?.showDnd ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.glance.showDnd", checked)
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Status Rings")
+                tooltip: Translation.tr("Configure which system metrics to show")
+
+                SettingsSwitch {
+                    buttonIcon: "memory"
+                    text: Translation.tr("CPU usage")
+                    checked: Config.options?.sidebar?.widgets?.statusRings?.showCpu ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.statusRings.showCpu", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "memory_alt"
+                    text: Translation.tr("RAM usage")
+                    checked: Config.options?.sidebar?.widgets?.statusRings?.showRam ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.statusRings.showRam", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "hard_drive"
+                    text: Translation.tr("Disk usage")
+                    checked: Config.options?.sidebar?.widgets?.statusRings?.showDisk ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.statusRings.showDisk", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "thermostat"
+                    text: Translation.tr("Temperature")
+                    checked: Config.options?.sidebar?.widgets?.statusRings?.showTemp ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.statusRings.showTemp", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "battery_full"
+                    text: Translation.tr("Battery")
+                    checked: Config.options?.sidebar?.widgets?.statusRings?.showBattery ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.statusRings.showBattery", checked)
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Controls Card")
+                tooltip: Translation.tr("Configure which toggles and actions to show")
+
+                ContentSubsectionLabel { text: Translation.tr("Toggles") }
+
+                SettingsSwitch {
+                    buttonIcon: "dark_mode"
+                    text: Translation.tr("Dark mode")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showDarkMode ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showDarkMode", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "do_not_disturb_on"
+                    text: Translation.tr("Do not disturb")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showDnd ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showDnd", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "nightlight"
+                    text: Translation.tr("Night light")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showNightLight ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showNightLight", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "sports_esports"
+                    text: Translation.tr("Game mode")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showGameMode ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showGameMode", checked)
+                }
+
+                ContentSubsectionLabel { text: Translation.tr("Actions") }
+
+                SettingsSwitch {
+                    buttonIcon: "wifi"
+                    text: Translation.tr("Network")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showNetwork ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showNetwork", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "bluetooth"
+                    text: Translation.tr("Bluetooth")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showBluetooth ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showBluetooth", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "settings"
+                    text: Translation.tr("Settings")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showSettings ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showSettings", checked)
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "lock"
+                    text: Translation.tr("Lock")
+                    checked: Config.options?.sidebar?.widgets?.controlsCard?.showLock ?? true
+                    onCheckedChanged: Config.setNestedValue("sidebar.widgets.controlsCard.showLock", checked)
+                }
+            }
+        }
+    }
+
+    SettingsCardSection {
         expanded: false
         icon: "voting_chip"
         title: Translation.tr("On-screen display")

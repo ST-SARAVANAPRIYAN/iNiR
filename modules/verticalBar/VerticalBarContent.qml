@@ -79,13 +79,15 @@ Item { // Bar content region
 
         Image {
             id: blurredWallpaper
-            anchors.fill: parent
+            x: -barBackground.x
+            y: -barBackground.y
+            width: root.width
+            height: root.height
             visible: root.blurBackground
             source: root.wallpaperUrl
             fillMode: Image.PreserveAspectCrop
             cache: true
             asynchronous: true
-            antialiasing: true
 
             layer.enabled: Appearance.effectsEnabled
             layer.effect: StyledBlurEffect {

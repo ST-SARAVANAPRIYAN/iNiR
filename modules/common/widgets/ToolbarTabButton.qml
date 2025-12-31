@@ -13,14 +13,18 @@ RippleButton {
     property bool showLabel: true
     horizontalPadding: 10
 
-    implicitHeight: 40
+    implicitHeight: Appearance.inirEverywhere ? 32 : 40
     readonly property real _iconOnlyImplicitWidth: icon.implicitWidth + horizontalPadding * 2
     implicitWidth: root.showLabel ? (implicitContentWidth + horizontalPadding * 2) : root._iconOnlyImplicitWidth
-    buttonRadius: height / 2
+    buttonRadius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : height / 2
 
     colBackground: "transparent"
-    colBackgroundHover: current ? "transparent" : ColorUtils.transparentize(Appearance.colors.colOnSurface, 0.95)
-    colRipple: current ? ColorUtils.transparentize(Appearance.colors.colOnSurface, 1) : ColorUtils.transparentize(Appearance.colors.colOnSurface, 0.95)
+    colBackgroundHover: current ? "transparent" 
+        : Appearance.inirEverywhere ? ColorUtils.transparentize(Appearance.inir.colText, 0.92)
+        : ColorUtils.transparentize(Appearance.colors.colOnSurface, 0.95)
+    colRipple: current ? "transparent" 
+        : Appearance.inirEverywhere ? ColorUtils.transparentize(Appearance.inir.colText, 0.85)
+        : ColorUtils.transparentize(Appearance.colors.colOnSurface, 0.95)
 
     contentItem: Row {
         id: contentRow

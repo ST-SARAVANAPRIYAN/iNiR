@@ -114,14 +114,22 @@ MouseArea { // Notification group area
 
     StyledRectangularShadow {
         target: background
-        visible: popup
+        visible: popup && !Appearance.inirEverywhere
     }
     Rectangle { // Background of the notification
         id: background
         anchors.left: parent.left
         width: parent.width
-        color: popup ? ColorUtils.applyAlpha(Appearance.colors.colLayer2, 1 - Appearance.backgroundTransparency) : Appearance.colors.colLayer2
-        radius: Appearance.rounding.normal
+        color: popup 
+            ? (Appearance.inirEverywhere ? Appearance.inir.colLayer2
+              : Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface 
+              : ColorUtils.applyAlpha(Appearance.colors.colLayer2, 1 - Appearance.backgroundTransparency))
+            : (Appearance.inirEverywhere ? Appearance.inir.colLayer1
+              : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface 
+              : Appearance.colors.colLayer2)
+        radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.normal
+        border.width: Appearance.inirEverywhere ? 1 : 0
+        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
         anchors.leftMargin: root.xOffset
 
         Behavior on anchors.leftMargin {

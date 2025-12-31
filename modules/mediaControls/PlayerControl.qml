@@ -28,20 +28,28 @@ Item { // Player instance
 
     property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
 
+    // Inir colors
+    readonly property color jiraColText: Appearance.inir.colText
+    readonly property color jiraColTextSecondary: Appearance.inir.colTextSecondary
+    readonly property color jiraColPrimary: Appearance.inir.colPrimary
+    readonly property color jiraColLayer1: Appearance.inir.colLayer1
+    readonly property color jiraColLayer2: Appearance.inir.colLayer2
+
     component TrackChangeButton: RippleButton {
         implicitWidth: 24
         implicitHeight: 24
 
         property var iconName
-        colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 1)
-        colBackgroundHover: blendedColors.colSecondaryContainerHover
-        colRipple: blendedColors.colSecondaryContainerActive
+        colBackground: "transparent"
+        colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : blendedColors.colSecondaryContainerHover
+        colRipple: Appearance.inirEverywhere ? Appearance.inir.colLayer2Active : blendedColors.colSecondaryContainerActive
+        buttonRadius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.full
 
         contentItem: MaterialSymbol {
             iconSize: Appearance.font.pixelSize.huge
             fill: 1
             horizontalAlignment: Text.AlignHCenter
-            color: blendedColors.colOnSecondaryContainer
+            color: Appearance.inirEverywhere ? root.jiraColText : blendedColors.colOnSecondaryContainer
             text: iconName
 
             Behavior on color {
@@ -102,13 +110,16 @@ Item { // Player instance
 
     StyledRectangularShadow {
         target: background
+        visible: !Appearance.inirEverywhere
     }
     Rectangle { // Background
         id: background
         anchors.fill: parent
         anchors.margins: Appearance.sizes.elevationMargin
-        color: ColorUtils.applyAlpha(blendedColors.colLayer0, 1)
-        radius: root.radius
+        color: Appearance.inirEverywhere ? root.jiraColLayer1 : ColorUtils.applyAlpha(blendedColors.colLayer0, 1)
+        radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : root.radius
+        border.width: Appearance.inirEverywhere ? 1 : 0
+        border.color: Appearance.inir.colBorder
 
         layer.enabled: true
         layer.effect: GE.OpacityMask {
@@ -129,6 +140,7 @@ Item { // Player instance
             cache: false
             antialiasing: true
             asynchronous: true
+            opacity: Appearance.inirEverywhere ? 0.15 : 1
 
             layer.enabled: Appearance.effectsEnabled
             layer.effect: StyledBlurEffect {
@@ -137,6 +149,7 @@ Item { // Player instance
 
             Rectangle {
                 anchors.fill: parent
+                visible: !Appearance.inirEverywhere
                 color: ColorUtils.transparentize(blendedColors.colLayer0, 0.3)
                 radius: root.radius
             }
@@ -149,7 +162,7 @@ Item { // Player instance
             points: root.visualizerPoints
             maxVisualizerValue: root.maxVisualizerValue
             smoothing: root.visualizerSmoothing
-            color: blendedColors.colPrimary
+            color: Appearance.inirEverywhere ? root.jiraColPrimary : blendedColors.colPrimary
         }
 
         RowLayout {
@@ -161,8 +174,8 @@ Item { // Player instance
                 id: artBackground
                 Layout.fillHeight: true
                 implicitWidth: height
-                radius: Appearance.rounding.verysmall
-                color: ColorUtils.transparentize(blendedColors.colLayer1, 0.5)
+                radius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.verysmall
+                color: Appearance.inirEverywhere ? root.jiraColLayer2 : ColorUtils.transparentize(blendedColors.colLayer1, 0.5)
 
                 layer.enabled: true
                 layer.effect: GE.OpacityMask {
@@ -199,7 +212,7 @@ Item { // Player instance
                     Layout.fillWidth: true
                     Layout.rightMargin: playPauseButton.size + 8
                     font.pixelSize: Appearance.font.pixelSize.large
-                    color: blendedColors.colOnLayer0
+                    color: Appearance.inirEverywhere ? root.jiraColText : blendedColors.colOnLayer0
                     elide: Text.ElideRight
                     text: StringUtils.cleanMusicTitle(root.player?.trackTitle) || "Untitled"
                     animateChange: true
@@ -211,7 +224,7 @@ Item { // Player instance
                     Layout.fillWidth: true
                     Layout.rightMargin: playPauseButton.size + 8
                     font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: blendedColors.colSubtext
+                    color: Appearance.inirEverywhere ? root.jiraColTextSecondary : blendedColors.colSubtext
                     elide: Text.ElideRight
                     text: root.player?.trackArtist
                     animateChange: true
@@ -231,7 +244,7 @@ Item { // Player instance
                         anchors.right: parent.right
                         anchors.rightMargin: playPauseButton.size + 8
                         font.pixelSize: Appearance.font.pixelSize.small
-                        color: blendedColors.colSubtext
+                        color: Appearance.inirEverywhere ? root.jiraColTextSecondary : blendedColors.colSubtext
                         elide: Text.ElideRight
                         text: `${StringUtils.friendlyTimeForSeconds(root.player?.position)} / ${StringUtils.friendlyTimeForSeconds(root.player?.length)}`
                     }
@@ -257,9 +270,9 @@ Item { // Player instance
                                 active: root.player?.canSeek ?? false
                                 sourceComponent: StyledSlider { 
                                     configuration: StyledSlider.Configuration.Wavy
-                                    highlightColor: blendedColors.colPrimary
-                                    trackColor: blendedColors.colSecondaryContainer
-                                    handleColor: blendedColors.colPrimary
+                                    highlightColor: Appearance.inirEverywhere ? root.jiraColPrimary : blendedColors.colPrimary
+                                    trackColor: Appearance.inirEverywhere ? root.jiraColLayer2 : blendedColors.colSecondaryContainer
+                                    handleColor: Appearance.inirEverywhere ? root.jiraColPrimary : blendedColors.colPrimary
                                     value: root.player?.position / root.player?.length
                                     onMoved: {
                                         root.player.position = value * root.player.length;
@@ -277,8 +290,8 @@ Item { // Player instance
                                 active: !(root.player?.canSeek ?? false)
                                 sourceComponent: StyledProgressBar { 
                                     wavy: root.player?.isPlaying
-                                    highlightColor: blendedColors.colPrimary
-                                    trackColor: blendedColors.colSecondaryContainer
+                                    highlightColor: Appearance.inirEverywhere ? root.jiraColPrimary : blendedColors.colPrimary
+                                    trackColor: Appearance.inirEverywhere ? root.jiraColLayer2 : blendedColors.colSecondaryContainer
                                     value: root.player?.position / root.player?.length
                                 }
                             }
@@ -301,16 +314,26 @@ Item { // Player instance
                         implicitHeight: size
                         downAction: () => root.player?.togglePlaying();
 
-                        buttonRadius: root.player?.isPlaying ? Appearance?.rounding.normal : size / 2
-                        colBackground: root.player?.isPlaying ? blendedColors.colPrimary : blendedColors.colSecondaryContainer
-                        colBackgroundHover: root.player?.isPlaying ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover
-                        colRipple: root.player?.isPlaying ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
+                        buttonRadius: Appearance.inirEverywhere 
+                            ? Appearance.inir.roundingSmall 
+                            : (root.player?.isPlaying ? Appearance?.rounding.normal : size / 2)
+                        colBackground: Appearance.inirEverywhere 
+                            ? "transparent" 
+                            : (root.player?.isPlaying ? blendedColors.colPrimary : blendedColors.colSecondaryContainer)
+                        colBackgroundHover: Appearance.inirEverywhere 
+                            ? Appearance.inir.colLayer2Hover 
+                            : (root.player?.isPlaying ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover)
+                        colRipple: Appearance.inirEverywhere 
+                            ? Appearance.inir.colLayer2Active 
+                            : (root.player?.isPlaying ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive)
 
                         contentItem: MaterialSymbol {
                             iconSize: Appearance.font.pixelSize.huge
                             fill: 1
                             horizontalAlignment: Text.AlignHCenter
-                            color: root.player?.isPlaying ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer
+                            color: Appearance.inirEverywhere 
+                                ? root.jiraColPrimary 
+                                : (root.player?.isPlaying ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer)
                             text: root.player?.isPlaying ? "pause" : "play_arrow"
 
                             Behavior on color {

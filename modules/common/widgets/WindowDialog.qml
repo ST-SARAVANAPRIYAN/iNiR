@@ -45,8 +45,12 @@ Rectangle {
     Rectangle {
         id: dialogBackground
         anchors.horizontalCenter: parent.horizontalCenter
-        radius: Appearance.rounding.large
-        color: Appearance.m3colors.m3surfaceContainerHigh // Use opaque version of layer3
+        radius: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : Appearance.rounding.large
+        color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+             : Appearance.auroraEverywhere ? Appearance.aurora.colDialogSurface 
+             : Appearance.m3colors.m3surfaceContainerHigh
+        border.width: 1
+        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
         
         property real targetY: root.height / 2 - root.backgroundHeight / 2
         y: root.show ? targetY : (targetY - root.backgroundAnimationMovementDistance)

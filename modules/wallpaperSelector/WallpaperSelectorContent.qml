@@ -191,7 +191,8 @@ MouseArea {
                 Layout.margins: 4
                 implicitWidth: quickDirColumnLayout.implicitWidth
                 implicitHeight: quickDirColumnLayout.implicitHeight
-                color: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                    : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface : Appearance.colors.colLayer1
                 radius: wallpaperGridBackground.radius - Layout.margins
 
                 ColumnLayout {
