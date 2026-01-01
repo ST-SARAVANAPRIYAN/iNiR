@@ -151,15 +151,19 @@ Singleton {
 
     Component.onCompleted: {
         // Prime initial state once; subsequent updates come from nmcli monitor.
-        Qt.callLater(() => root.update())
+        // Delay startup to allow D-Bus/NetworkManager to be ready
+        Qt.callLater(() => {
+            subscriber.running = true
+            root.update()
+        })
     }
 
     Process {
         id: subscriber
-        running: true
+        running: false  // Start via Component.onCompleted
         command: ["/usr/bin/nmcli", "monitor"]
         // Auto-restart if the monitor process dies (can happen after lockscreen/suspend)
-        onRunningChanged: if (!running) running = true
+        onRunningChanged: if (!running && root.Component.status === Component.Ready) running = true
         stdout: SplitParser {
             onRead: root.update()
         }
