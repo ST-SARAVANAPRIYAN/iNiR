@@ -102,7 +102,7 @@ Singleton {
                 "iiBar", "iiBackground", "iiCheatsheet", "iiDock", "iiLock", "iiMediaControls", 
                 "iiNotificationPopup", "iiOnScreenDisplay", "iiOnScreenKeyboard", "iiOverlay", 
                 "iiOverview", "iiPolkit", "iiRegionSelector", "iiScreenCorners", "iiSessionScreen", 
-                "iiSidebarLeft", "iiSidebarRight", "iiVerticalBar", "iiWallpaperSelector", "iiWidgetBar", "iiAltSwitcher", "iiClipboard"
+                "iiSidebarLeft", "iiSidebarRight", "iiVerticalBar", "iiWallpaperSelector", "iiAltSwitcher", "iiClipboard"
             ]
             property string panelFamily: "ii" // "ii" or "waffle"
             property bool familyTransitionAnimation: true // Show animated overlay when switching families
@@ -882,16 +882,6 @@ Singleton {
                     property bool showVolume: true
                     property bool showBrightness: true
                 }
-            }
-
-            property JsonObject widgetBar: JsonObject {
-                property bool enable: true
-                property int width: 320
-                property string position: "left" // "left" or "right"
-                property bool showMedia: true
-                property bool showWeather: true
-                property bool showCalendar: true
-                property bool showQuickNav: true
             }
 
             property JsonObject sounds: JsonObject {

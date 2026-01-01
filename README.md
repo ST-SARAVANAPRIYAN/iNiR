@@ -148,7 +148,6 @@ Main targets:
 | `settings` | `open` |
 | `sidebarLeft` | `toggle` |
 | `sidebarRight` | `toggle` |
-| `widgetBar` | `toggle`, `open`, `close` |
 | `wallpaperSelector` | `toggle` |
 | `panelFamily` | `cycle`, `set` |
 | `mpris` | `playPause`, `next`, `previous` |

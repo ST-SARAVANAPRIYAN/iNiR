@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2026-01-01
 
 ### Added
-- **WidgetBar**: New widget panel with media, weather, calendar, and quick navigation widgets. Toggle with `qs -c ii ipc call widgetBar toggle`
 - **Dock multi-position**: Dock can now be placed at top, bottom, left, or right
 - **Aurora style**: Glass effect with wallpaper blur for panels and popups
 - **Inir style**: TUI-inspired style with accent borders and darker colors
