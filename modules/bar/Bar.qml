@@ -8,6 +8,7 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.common.functions
 
 Scope {
     id: bar
@@ -250,7 +251,7 @@ Scope {
                                                 : (-Appearance.sizes.barHeight)
                                             width: barRoot.screen?.width ?? 1920
                                             height: barRoot.screen?.height ?? 1080
-                                            source: Appearance.currentWallpaper
+                                            source: Wallpapers.effectiveWallpaperUrl
                                             fillMode: Image.PreserveAspectCrop
                                             cache: true
                                             asynchronous: true
