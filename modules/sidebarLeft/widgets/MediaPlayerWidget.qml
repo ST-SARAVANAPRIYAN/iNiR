@@ -18,7 +18,7 @@ Item {
     implicitHeight: hasPlayer ? card.implicitHeight + Appearance.sizes.elevationMargin : 0
     visible: hasPlayer
 
-    readonly property MprisPlayer player: MprisController.activePlayer
+    property MprisPlayer player: MprisController.activePlayer
     readonly property bool hasPlayer: player && player.trackTitle
     property string artDownloadLocation: Directories.coverArt
     property string artFileName: player?.trackArtUrl ? Qt.md5(player.trackArtUrl) : ""

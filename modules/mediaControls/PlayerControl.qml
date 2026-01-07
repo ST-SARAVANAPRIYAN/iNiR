@@ -160,7 +160,7 @@ Item {
              : Appearance.auroraEverywhere ? "transparent"
              : (blendedColors?.colLayer0 ?? Appearance.colors.colLayer0)
         border.width: Appearance.inirEverywhere || Appearance.auroraEverywhere ? 1 : 0
-        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder 
+        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
                     : Appearance.auroraEverywhere ? Appearance.aurora.colTooltipBorder
                     : "transparent"
         clip: true
@@ -373,9 +373,15 @@ Item {
                             configuration: StyledSlider.Configuration.Wavy
                             wavy: root.player?.isPlaying ?? false
                             animateWave: root.player?.isPlaying ?? false
-                            highlightColor: Appearance.inirEverywhere ? root.inirPrimary : (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
-                            trackColor: Appearance.inirEverywhere ? root.inirLayer2 : (blendedColors?.colSecondaryContainer ?? Appearance.colors.colSecondaryContainer)
-                            handleColor: Appearance.inirEverywhere ? root.inirPrimary : (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
+                            highlightColor: Appearance.inirEverywhere ? root.inirPrimary
+                                : Appearance.auroraEverywhere ? Appearance.colors.colPrimary
+                                : (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
+                            trackColor: Appearance.inirEverywhere ? root.inirLayer2
+                                : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface
+                                : (blendedColors?.colSecondaryContainer ?? Appearance.colors.colSecondaryContainer)
+                            handleColor: Appearance.inirEverywhere ? root.inirPrimary
+                                : Appearance.auroraEverywhere ? Appearance.colors.colPrimary
+                                : (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
                             value: root.player?.length > 0 ? root.player.position / root.player.length : 0
                             onMoved: root.player.position = value * root.player.length
                             scrollable: true
@@ -388,8 +394,12 @@ Item {
                         sourceComponent: StyledProgressBar {
                             wavy: root.player?.isPlaying ?? false
                             animateWave: root.player?.isPlaying ?? false
-                            highlightColor: Appearance.inirEverywhere ? root.inirPrimary : (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
-                            trackColor: Appearance.inirEverywhere ? root.inirLayer2 : (blendedColors?.colSecondaryContainer ?? Appearance.colors.colSecondaryContainer)
+                            highlightColor: Appearance.inirEverywhere ? root.inirPrimary
+                                : Appearance.auroraEverywhere ? Appearance.colors.colPrimary
+                                : (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
+                            trackColor: Appearance.inirEverywhere ? root.inirLayer2
+                                : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface
+                                : (blendedColors?.colSecondaryContainer ?? Appearance.colors.colSecondaryContainer)
                             value: root.player?.length > 0 ? root.player.position / root.player.length : 0
                         }
                     }
@@ -413,14 +423,20 @@ Item {
                         implicitWidth: 32; implicitHeight: 32
                         buttonRadius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.full
                         colBackground: "transparent"
-                        colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : ColorUtils.transparentize(blendedColors?.colLayer1 ?? Appearance.colors.colLayer1, 0.5)
-                        colRipple: Appearance.inirEverywhere ? Appearance.inir.colLayer2Active : (blendedColors?.colLayer1Active ?? Appearance.colors.colLayer1Active)
+                        colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
+                            : ColorUtils.transparentize(blendedColors?.colLayer1 ?? Appearance.colors.colLayer1, 0.5)
+                        colRipple: Appearance.inirEverywhere ? Appearance.inir.colLayer2Active
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive
+                            : (blendedColors?.colLayer1Active ?? Appearance.colors.colLayer1Active)
                         onClicked: root.player?.previous()
                         contentItem: Item {
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "skip_previous"; iconSize: 22; fill: 1
-                                color: Appearance.inirEverywhere ? root.inirText : (blendedColors?.colOnLayer0 ?? Appearance.colors.colOnLayer0)
+                                color: Appearance.inirEverywhere ? root.inirText
+                                    : Appearance.auroraEverywhere ? Appearance.colors.colOnLayer0
+                                    : (blendedColors?.colOnLayer0 ?? Appearance.colors.colOnLayer0)
                             }
                         }
                         StyledToolTip { text: Translation.tr("Previous") }
@@ -437,19 +453,19 @@ Item {
                                 ? (blendedColors?.colPrimary ?? Appearance.colors.colPrimary)
                                 : (blendedColors?.colSecondaryContainer ?? Appearance.colors.colSecondaryContainer))
                         colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover
-                            : Appearance.auroraEverywhere ? ColorUtils.transparentize(blendedColors?.colLayer1 ?? Appearance.colors.colLayer1, 0.5)
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                             : (root.player?.isPlaying
                                 ? (blendedColors?.colPrimaryHover ?? Appearance.colors.colPrimaryHover)
                                 : (blendedColors?.colSecondaryContainerHover ?? Appearance.colors.colSecondaryContainerHover))
                         colRipple: Appearance.inirEverywhere ? Appearance.inir.colLayer2Active
-                            : Appearance.auroraEverywhere ? (blendedColors?.colLayer1Active ?? Appearance.colors.colLayer1Active)
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive
                             : (root.player?.isPlaying
                                 ? (blendedColors?.colPrimaryActive ?? Appearance.colors.colPrimaryActive)
                                 : (blendedColors?.colSecondaryContainerActive ?? Appearance.colors.colSecondaryContainerActive))
                         onClicked: root.player?.togglePlaying()
 
                         Behavior on buttonRadius {
-                            enabled: Appearance.animationsEnabled && !Appearance.inirEverywhere
+                            enabled: Appearance.animationsEnabled && !Appearance.inirEverywhere && !Appearance.auroraEverywhere
                             NumberAnimation { duration: Appearance.animation.elementMoveFast.duration }
                         }
 
@@ -459,7 +475,7 @@ Item {
                                 text: root.player?.isPlaying ? "pause" : "play_arrow"
                                 iconSize: 24; fill: 1
                                 color: Appearance.inirEverywhere ? root.inirPrimary
-                                    : Appearance.auroraEverywhere ? (blendedColors?.colOnLayer0 ?? Appearance.colors.colOnLayer0)
+                                    : Appearance.auroraEverywhere ? Appearance.colors.colOnLayer0
                                     : (root.player?.isPlaying
                                         ? (blendedColors?.colOnPrimary ?? Appearance.colors.colOnPrimary)
                                         : (blendedColors?.colOnSecondaryContainer ?? Appearance.colors.colOnSecondaryContainer))
@@ -476,14 +492,20 @@ Item {
                         implicitWidth: 32; implicitHeight: 32
                         buttonRadius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.full
                         colBackground: "transparent"
-                        colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : ColorUtils.transparentize(blendedColors?.colLayer1 ?? Appearance.colors.colLayer1, 0.5)
-                        colRipple: Appearance.inirEverywhere ? Appearance.inir.colLayer2Active : (blendedColors?.colLayer1Active ?? Appearance.colors.colLayer1Active)
+                        colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
+                            : ColorUtils.transparentize(blendedColors?.colLayer1 ?? Appearance.colors.colLayer1, 0.5)
+                        colRipple: Appearance.inirEverywhere ? Appearance.inir.colLayer2Active
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive
+                            : (blendedColors?.colLayer1Active ?? Appearance.colors.colLayer1Active)
                         onClicked: root.player?.next()
                         contentItem: Item {
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: "skip_next"; iconSize: 22; fill: 1
-                                color: Appearance.inirEverywhere ? root.inirText : (blendedColors?.colOnLayer0 ?? Appearance.colors.colOnLayer0)
+                                color: Appearance.inirEverywhere ? root.inirText
+                                    : Appearance.auroraEverywhere ? Appearance.colors.colOnLayer0
+                                    : (blendedColors?.colOnLayer0 ?? Appearance.colors.colOnLayer0)
                             }
                         }
                         StyledToolTip { text: Translation.tr("Next") }

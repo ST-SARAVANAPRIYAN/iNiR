@@ -196,7 +196,7 @@ Scope {
                 ColumnLayout {
                     id: playerColumnLayout
                     anchors.fill: parent
-                    spacing: -Appearance.sizes.elevationMargin
+                    spacing: 8
 
                     Repeater {
                         model: ScriptModel {

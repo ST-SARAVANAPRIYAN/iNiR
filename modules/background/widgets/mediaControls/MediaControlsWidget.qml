@@ -123,13 +123,20 @@ AbstractBackgroundWidget {
 
             StyledRectangularShadow {
                 target: placeholderBackground
+                visible: !Appearance.inirEverywhere && !Appearance.auroraEverywhere
             }
 
             Rectangle {
                 id: placeholderBackground
                 anchors.centerIn: parent
-                color: Appearance.colors.colLayer0
-                radius: root.popupRounding
+                color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                     : Appearance.auroraEverywhere ? Appearance.aurora.colPopupSurface
+                     : Appearance.colors.colLayer0
+                radius: Appearance.inirEverywhere ? Appearance.inir.roundingNormal : root.popupRounding
+                border.width: Appearance.inirEverywhere || Appearance.auroraEverywhere ? 1 : 0
+                border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colPopupBorder
+                            : "transparent"
                 property real padding: 20
                 implicitWidth: placeholderLayout.implicitWidth + padding * 2
                 implicitHeight: placeholderLayout.implicitHeight + padding * 2
@@ -141,9 +148,14 @@ AbstractBackgroundWidget {
                     StyledText {
                         text: Translation.tr("No active player")
                         font.pixelSize: Appearance.font.pixelSize.large
+                        color: Appearance.inirEverywhere ? Appearance.inir.colText
+                            : Appearance.auroraEverywhere ? Appearance.colors.colOnLayer0
+                            : Appearance.colors.colOnLayer0
                     }
                     StyledText {
-                        color: Appearance.colors.colSubtext
+                        color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colTextSecondary
+                            : Appearance.colors.colSubtext
                         text: Translation.tr("Make sure your player has MPRIS support\nor try turning off duplicate player filtering")
                         font.pixelSize: Appearance.font.pixelSize.small
                     }

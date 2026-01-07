@@ -64,9 +64,11 @@ Item {
                 height: volumeRow.height + 8
                 radius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.verysmall
                 color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+                     : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                      : Appearance.colors.colLayer3
-                border.width: 1
+                border.width: Appearance.inirEverywhere || Appearance.auroraEverywhere ? 1 : 0
                 border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                            : Appearance.auroraEverywhere ? Appearance.aurora.colPopupBorder
                             : Appearance.colors.colLayer3Hover
 
                 Row {
@@ -179,7 +181,9 @@ Item {
             lineWidth: Appearance.rounding.unsharpen
             value: (activePlayer && activePlayer.length > 0) ? (activePlayer.position / activePlayer.length) : 0
             implicitSize: 22
-            colPrimary: Appearance.colors.colOnSecondaryContainer
+            colPrimary: Appearance.inirEverywhere ? Appearance.inir.colPrimary
+                : Appearance.auroraEverywhere ? Appearance.colors.colPrimary
+                : Appearance.colors.colOnSecondaryContainer
             enableAnimation: activePlayer?.playbackState === MprisPlaybackState.Playing
 
             Item {
@@ -192,7 +196,9 @@ Item {
                     fill: 1
                     text: activePlayer?.isPlaying ? "pause" : "music_note"
                     iconSize: Appearance.font.pixelSize.normal
-                    color: Appearance.m3colors.m3onSecondaryContainer
+                    color: Appearance.inirEverywhere ? Appearance.inir.colOnPrimary
+                        : Appearance.auroraEverywhere ? Appearance.colors.colOnLayer0
+                        : Appearance.m3colors.m3onSecondaryContainer
                 }
             }
         }
@@ -201,11 +207,13 @@ Item {
             visible: Config.options.bar.verbose
             width: rowLayout.width - (CircularProgress.size + rowLayout.spacing * 2)
             Layout.alignment: Qt.AlignVCenter
-            Layout.fillWidth: true // Ensures the text takes up available space
+            Layout.fillWidth: true
             Layout.rightMargin: rowLayout.spacing
             horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight // Truncates the text on the right
-            color: Appearance.colors.colOnLayer1
+            elide: Text.ElideRight
+            color: Appearance.inirEverywhere ? Appearance.inir.colText
+                : Appearance.auroraEverywhere ? Appearance.colors.colOnLayer0
+                : Appearance.colors.colOnLayer1
             text: `${cleanedTitle}${activePlayer?.trackArtist ? ' • ' + activePlayer.trackArtist : ''}`
         }
 
