@@ -187,9 +187,10 @@ Item { // Wrapper
 
         // Default search
         nonAppResultsTimer.restart();
-        
+
+        // Use stable keys for non-app results to prevent unnecessary re-renders
         const mathResultObject = {
-            key: `Math result: ${root.mathResult}`,
+            key: "__math_result__",
             name: root.mathResult,
             clickActionName: Translation.tr("Copy"),
             type: Translation.tr("Math result"),
@@ -197,7 +198,7 @@ Item { // Wrapper
             materialSymbol: 'calculate',
             execute: () => { Quickshell.clipboardText = root.mathResult; }
         };
-        
+
         const appQuery = StringUtils.cleanPrefix(text, root.prefixApp)
         const appEntries = AppSearch.fuzzyQuery(appQuery)
         const seenAppNames = new Set()
@@ -210,7 +211,7 @@ Item { // Wrapper
             seenAppNames.add(nameKey)
 
             appResultObjects.push({
-                key: entry.execute,
+                key: `app_${entry.name}`,
                 name: entry.name,
                 clickActionName: Translation.tr("Launch"),
                 type: Translation.tr("App"),
@@ -219,9 +220,9 @@ Item { // Wrapper
                 execute: entry.execute,
             })
         }
-        
+
         const commandResultObject = {
-            key: `cmd ${text}`,
+            key: "__run_command__",
             name: StringUtils.cleanPrefix(text, root.prefixShellCommand).replace("file://", ""),
             clickActionName: Translation.tr("Run"),
             type: Translation.tr("Run command"),
@@ -244,9 +245,9 @@ Item { // Wrapper
                 }
             }
         };
-        
+
         const webSearchResultObject = {
-            key: `website ${text}`,
+            key: "__web_search__",
             name: StringUtils.cleanPrefix(text, root.prefixWebSearch),
             clickActionName: Translation.tr("Search"),
             type: Translation.tr("Search the web"),
@@ -304,7 +305,7 @@ Item { // Wrapper
 
     Timer {
         id: searchDebounceTimer
-        interval: 50  // ~3 frames debounce
+        interval: 100  // Increased debounce to reduce flickering
         onTriggered: {
             root.debouncedSearchText = root.searchingText;
             root.updateSearchResults();

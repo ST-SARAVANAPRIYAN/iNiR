@@ -135,9 +135,11 @@ Item {
                         fill: micButton.isInUse ? 1 : 0
                         text: micButton.isMuted ? "mic_off" : "mic"
                         iconSize: Appearance.font.pixelSize.large
-                        color: micButton.isInUse && !micButton.isMuted 
-                            ? Appearance.colors.colError 
-                            : Appearance.colors.colOnLayer2
+                        color: micButton.isInUse && !micButton.isMuted
+                            ? (Appearance.inirEverywhere ? Appearance.inir.colError : Appearance.colors.colError)
+                            : (Appearance.inirEverywhere ? Appearance.inir.colOnLayer2
+                             : Appearance.auroraEverywhere ? Appearance.m3colors.m3onSurface
+                             : Appearance.colors.colOnLayer2)
                     }
                     
                     Rectangle {
