@@ -556,6 +556,7 @@
     "ytmusic": {
       "enable": true,
       "autoConnect": true,
+      "hideSyncBanner": false,
       "browser": "firefox",
       "cookiesPath": "",
       "recentSearches": [],
@@ -760,6 +761,10 @@
     "checkInterval": 120,
     "adviseUpdateThreshold": 75,
     "stronglyAdviseUpdateThreshold": 200
+  },
+  "welcomeWizard": {
+    "completed": false,
+    "skipped": false
   },
   "waffles": {
     "settings": {

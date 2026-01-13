@@ -8,10 +8,11 @@ import qs.services
 
 /**
  * Reusable track list item for YtMusic views.
+ * Optimized for ListView performance - no heavy ripple effects.
  */
-RippleButton {
+Rectangle {
     id: root
-    
+
     required property var track
     property int trackIndex: -1
     property bool showIndex: false
@@ -19,27 +20,39 @@ RippleButton {
     property bool showRemoveButton: false
     property bool showAddToPlaylist: false
     property bool showAddToQueue: true
-    
+
     readonly property bool isCurrentTrack: track?.videoId === YtMusic.currentVideoId
-    
+    readonly property bool hovered: mouseArea.containsMouse
+
     signal playRequested()
     signal removeRequested()
     signal addToPlaylistRequested()
-    
+
     implicitHeight: 60
-    buttonRadius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.small
-    colBackground: isCurrentTrack 
-        ? (Appearance.inirEverywhere ? Appearance.inir.colPrimaryContainer 
+    radius: Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.small
+    color: root.isCurrentTrack
+        ? (Appearance.inirEverywhere ? Appearance.inir.colPrimaryContainer
             : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
             : Appearance.colors.colPrimaryContainer)
-        : "transparent"
-    colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer1Hover
-        : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
-        : Appearance.colors.colLayer1Hover
-    
-    onClicked: root.playRequested()
+        : root.hovered
+            ? (Appearance.inirEverywhere ? Appearance.inir.colLayer1Hover
+                : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
+                : Appearance.colors.colLayer1Hover)
+            : "transparent"
 
-    contentItem: RowLayout {
+    Behavior on color {
+        ColorAnimation { duration: 100 }
+    }
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.playRequested()
+    }
+
+    RowLayout {
         anchors.fill: parent
         anchors.margins: 6
         spacing: 8
@@ -49,7 +62,7 @@ RippleButton {
             visible: root.showIndex && root.trackIndex >= 0
             Layout.preferredWidth: visible ? 24 : 0
             Layout.preferredHeight: 24
-            
+
             StyledText {
                 anchors.centerIn: parent
                 visible: !root.isCurrentTrack
@@ -58,7 +71,7 @@ RippleButton {
                 font.family: Appearance.font.family.numbers
                 color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.colors.colSubtext
             }
-            
+
             MaterialSymbol {
                 anchors.centerIn: parent
                 visible: root.isCurrentTrack
@@ -79,15 +92,19 @@ RippleButton {
             clip: true
 
             Image {
+                id: thumbImage
                 anchors.fill: parent
                 source: root.track?.thumbnail ?? ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
+                cache: true
+                sourceSize.width: 96
+                sourceSize.height: 96
             }
 
             MaterialSymbol {
                 anchors.centerIn: parent
-                visible: parent.children[0].status !== Image.Ready
+                visible: thumbImage.status !== Image.Ready
                 text: "music_note"
                 iconSize: 20
                 color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.colors.colSubtext
@@ -125,7 +142,7 @@ RippleButton {
                 text: root.track?.title ?? ""
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.weight: root.isCurrentTrack ? Font.Bold : Font.Medium
-                color: root.isCurrentTrack 
+                color: root.isCurrentTrack
                     ? (Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary)
                     : (Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer0)
                 elide: Text.ElideRight
@@ -141,40 +158,65 @@ RippleButton {
             }
         }
 
-        // Add to playlist
-        RippleButton {
-            visible: root.showAddToPlaylist
-            implicitWidth: 28; implicitHeight: 28
-            buttonRadius: 14
-            colBackground: "transparent"
-            colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : Appearance.colors.colLayer2Hover
-            onClicked: root.addToPlaylistRequested()
-            contentItem: MaterialSymbol { anchors.centerIn: parent; text: "playlist_add"; iconSize: 18; color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.colors.colSubtext }
-            StyledToolTip { text: Translation.tr("Add to playlist") }
+        // Action buttons - only show on hover for cleaner look
+        Row {
+            spacing: 2
+            visible: root.hovered || root.isCurrentTrack
+
+            // Add to playlist
+            IconButton {
+                visible: root.showAddToPlaylist
+                icon: "playlist_add"
+                tooltip: Translation.tr("Add to playlist")
+                onClicked: root.addToPlaylistRequested()
+            }
+
+            // Add to queue
+            IconButton {
+                visible: root.showAddToQueue
+                icon: "queue_music"
+                tooltip: Translation.tr("Add to queue")
+                onClicked: YtMusic.addToQueue(root.track)
+            }
+
+            // Remove
+            IconButton {
+                visible: root.showRemoveButton
+                icon: "close"
+                tooltip: Translation.tr("Remove")
+                onClicked: root.removeRequested()
+            }
+        }
+    }
+
+    // Lightweight icon button without ripple
+    component IconButton: Rectangle {
+        property string icon
+        property string tooltip
+        property alias hovered: iconMouse.containsMouse
+        signal clicked()
+
+        width: 28; height: 28
+        radius: 14
+        color: hovered
+            ? (Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : Appearance.colors.colLayer2Hover)
+            : "transparent"
+
+        MaterialSymbol {
+            anchors.centerIn: parent
+            text: parent.icon
+            iconSize: 18
+            color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.colors.colSubtext
         }
 
-        // Add to queue
-        RippleButton {
-            visible: root.showAddToQueue
-            implicitWidth: 28; implicitHeight: 28
-            buttonRadius: 14
-            colBackground: "transparent"
-            colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : Appearance.colors.colLayer2Hover
-            onClicked: YtMusic.addToQueue(root.track)
-            contentItem: MaterialSymbol { anchors.centerIn: parent; text: "queue_music"; iconSize: 18; color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.colors.colSubtext }
-            StyledToolTip { text: Translation.tr("Add to queue") }
+        MouseArea {
+            id: iconMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: parent.clicked()
         }
 
-        // Remove
-        RippleButton {
-            visible: root.showRemoveButton
-            implicitWidth: 28; implicitHeight: 28
-            buttonRadius: 14
-            colBackground: "transparent"
-            colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer2Hover : Appearance.colors.colLayer2Hover
-            onClicked: root.removeRequested()
-            contentItem: MaterialSymbol { anchors.centerIn: parent; text: "close"; iconSize: 18; color: Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.colors.colSubtext }
-            StyledToolTip { text: Translation.tr("Remove") }
-        }
+        StyledToolTip { text: parent.tooltip }
     }
 }

@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+YouTube Music authentication helper.
+Extracts cookies from browsers for yt-dlp to use.
+
+Supports Firefox forks (Zen, LibreWolf, Floorp, Waterfox) by using
+firefox:/path/to/profile syntax since yt-dlp doesn't natively support them.
+"""
 import sys
 import json
 import subprocess
@@ -13,15 +20,26 @@ def get_base_dir():
 def get_cookie_output_path():
     return os.path.join(get_base_dir(), "yt-cookies.txt")
 
-def find_firefox_profile():
-    # Look for default release profile
-    base = os.path.expanduser("~/.mozilla/firefox")
+# Firefox forks that use the same cookie format
+FIREFOX_FORKS = {
+    "zen": "~/.zen",
+    "librewolf": "~/.librewolf",
+    "floorp": "~/.floorp",
+    "waterfox": "~/.waterfox",
+    "firefox": "~/.mozilla/firefox",
+}
+
+# Browsers natively supported by yt-dlp
+YTDLP_NATIVE_BROWSERS = ["brave", "chrome", "chromium", "edge", "firefox", "opera", "safari", "vivaldi", "whale"]
+
+def find_firefox_profile(base_path):
+    """Find the default profile in a Firefox-based browser."""
+    base = os.path.expanduser(base_path)
     if not os.path.exists(base):
         return None
-    
-    # Try to find in profiles.ini (too complex for quick script), fallback to glob
-    # Priority: *.default-release, *.default, *
-    patterns = ["*.default-release", "*.default", "*"]
+
+    # Priority: *.default-release, *.default, *Default*, any with cookies.sqlite
+    patterns = ["*.default-release", "*.default", "*Default*", "*"]
     for pattern in patterns:
         matches = glob.glob(os.path.join(base, pattern))
         for match in matches:
@@ -30,7 +48,7 @@ def find_firefox_profile():
     return None
 
 def find_chrome_profile(browser_name="google-chrome"):
-    # Map browser name to config dir
+    """Find profile for Chromium-based browsers."""
     config_map = {
         "chrome": "google-chrome",
         "google-chrome": "google-chrome",
@@ -41,60 +59,118 @@ def find_chrome_profile(browser_name="google-chrome"):
         "edge": "microsoft-edge",
         "thorium": "thorium"
     }
-    
+
     config_dir = config_map.get(browser_name.lower(), browser_name)
     base = os.path.expanduser(f"~/.config/{config_dir}")
-    
+
     if not os.path.exists(base):
         return None
-        
+
     # Check Default or Profile 1
-    default = os.path.join(base, "Default")
-    if os.path.exists(os.path.join(default, "Cookies")):
-        return default
-    
-    # Check Profile 1
-    p1 = os.path.join(base, "Profile 1")
-    if os.path.exists(os.path.join(p1, "Cookies")):
-        return p1
-        
+    for profile in ["Default", "Profile 1"]:
+        profile_path = os.path.join(base, profile)
+        if os.path.exists(os.path.join(profile_path, "Cookies")):
+            return profile_path
     return None
 
-def copy_cookies_and_extract(browser, profile_path, output_path):
+def is_firefox_fork(browser):
+    """Check if browser is a Firefox fork."""
+    return browser.lower() in FIREFOX_FORKS
+
+def get_ytdlp_browser_arg(browser, profile_path=None):
+    """
+    Get the correct --cookies-from-browser argument for yt-dlp.
+    For Firefox forks, use firefox:/path/to/profile syntax.
+    """
+    browser = browser.lower()
+
+    if browser in FIREFOX_FORKS and browser != "firefox":
+        # Firefox fork - need to use firefox:path syntax
+        if profile_path:
+            return f"firefox:{profile_path}"
+        # Find profile automatically
+        profile = find_firefox_profile(FIREFOX_FORKS[browser])
+        if profile:
+            return f"firefox:{profile}"
+        return None
+
+    # Native yt-dlp browser
+    if profile_path:
+        return f"{browser}:{profile_path}"
+    return browser
+
+def extract_cookies(browser, output_path):
+    """
+    Extract cookies from browser using yt-dlp.
+    Returns (success, error_message)
+    """
+    browser = browser.lower()
+
+    # Get the correct browser argument for yt-dlp
+    browser_arg = get_ytdlp_browser_arg(browser)
+
+    if not browser_arg:
+        return False, f"Could not find profile for {browser}"
+
+    cmd = [
+        "yt-dlp",
+        "--cookies-from-browser", browser_arg,
+        "--cookies", output_path,
+        "--no-warnings",
+        "--quiet",
+        "--skip-download",
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Any valid video URL to trigger cookie extraction
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0 and os.path.exists(output_path):
+            return True, None
+        return False, result.stderr or "Unknown error"
+    except subprocess.TimeoutExpired:
+        return False, "Timeout while extracting cookies"
+    except Exception as e:
+        return False, str(e)
+
+def extract_cookies_with_copy(browser, output_path):
+    """
+    Fallback: Copy cookies file to temp location and extract.
+    Useful when browser has the DB locked.
+    """
+    browser = browser.lower()
+
+    # Find profile path
+    if is_firefox_fork(browser):
+        profile_path = find_firefox_profile(FIREFOX_FORKS.get(browser, "~/.mozilla/firefox"))
+    else:
+        profile_path = find_chrome_profile(browser)
+
+    if not profile_path:
+        return False, f"Could not locate profile for {browser}"
+
     # Create temp dir
     temp_dir = f"/tmp/yt-music-auth-{int(time.time())}"
     os.makedirs(temp_dir, exist_ok=True)
-    
+
     try:
-        # Determine source cookie file
-        if "firefox" in browser.lower():
+        # Copy cookie files
+        if is_firefox_fork(browser) or browser == "firefox":
             src_cookie = os.path.join(profile_path, "cookies.sqlite")
             if os.path.exists(src_cookie):
                 shutil.copy2(src_cookie, temp_dir)
                 # Copy WAL file if exists (important for locked DBs)
-                if os.path.exists(src_cookie + "-wal"):
-                    shutil.copy2(src_cookie + "-wal", temp_dir)
-            
-            # For Firefox, yt-dlp expects a profile directory
+                for ext in ["-wal", "-shm"]:
+                    wal = src_cookie + ext
+                    if os.path.exists(wal):
+                        shutil.copy2(wal, temp_dir)
             browser_arg = f"firefox:{temp_dir}"
-            
         else:
             # Chromium based
             src_cookie = os.path.join(profile_path, "Cookies")
             if os.path.exists(src_cookie):
                 shutil.copy2(src_cookie, temp_dir)
-            
-            # For Chrome, we point to the temp dir which contains the Cookies file
-            # yt-dlp expects the directory containing 'Default/Cookies' or just the profile dir
-            # We mimic the structure: temp_dir/Default/Cookies ?
-            # No, if we pass chrome:PATH, PATH is the profile dir.
-            # So we need Cookies file inside temp_dir/Cookies ? No, Chrome keeps it in Profile/Cookies.
-            # Let's try pointing to temp_dir directly.
             browser_arg = f"{browser}:{temp_dir}"
-            
-        # Run yt-dlp to extract cookies
-        # We assume yt-dlp can decrypt Chrome cookies even if moved, as long as keyring is available.
-        
+
         cmd = [
             "yt-dlp",
             "--cookies-from-browser", browser_arg,
@@ -102,81 +178,89 @@ def copy_cookies_and_extract(browser, profile_path, output_path):
             "--no-warnings",
             "--quiet",
             "--skip-download",
-            "--check-formats", # minimal check
-            "https://music.youtube.com" # Dummy URL to trigger cookie extraction
+            "https://music.youtube.com"
         ]
-        
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        
+
         if result.returncode == 0 and os.path.exists(output_path):
             return True, None
-        else:
-            return False, result.stderr
-            
+        return False, result.stderr or "Failed to extract cookies"
+
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+def verify_connection(output_path):
+    """Verify that the cookies work by checking access to liked videos."""
+    cmd = [
+        "yt-dlp",
+        "--cookies", output_path,
+        "--flat-playlist",
+        "-I", "1",
+        "--print", "id",
+        "--no-warnings",
+        "https://www.youtube.com/playlist?list=LL"
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        return result.returncode == 0 and result.stdout.strip()
+    except:
+        return False
 
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"status": "error", "message": "Browser argument required"}))
         return 1
-        
+
     browser = sys.argv[1].lower()
     output_path = get_cookie_output_path()
-    
-    # 1. Try direct access (fastest, works if browser closed)
-    cmd = [
-        "yt-dlp",
-        "--cookies-from-browser", browser,
-        "--cookies", output_path,
-        "--no-warnings",
-        "--quiet",
-        "--skip-download",
-        "https://music.youtube.com"
-    ]
-    
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-        if result.returncode == 0 and os.path.exists(output_path):
+
+    # 1. Try direct extraction
+    success, error = extract_cookies(browser, output_path)
+
+    if success:
+        # Verify the cookies actually work
+        if verify_connection(output_path):
             print(json.dumps({
                 "status": "success",
                 "cookies_path": output_path,
                 "message": "Connected successfully"
             }))
             return 0
-    except Exception:
-        pass
-        
-    # 2. If failed, try copy workaround
-    profile_path = None
-    if "firefox" in browser:
-        profile_path = find_firefox_profile()
-    else:
-        profile_path = find_chrome_profile(browser)
-        
-    if not profile_path:
-        print(json.dumps({
-            "status": "error",
-            "message": f"Could not locate profile for {browser}. Close browser and try again."
-        }))
-        return 1
-        
-    success, error = copy_cookies_and_extract(browser, profile_path, output_path)
-    
+        else:
+            # Cookies extracted but don't work - user probably not logged in
+            print(json.dumps({
+                "status": "error",
+                "message": f"Not logged in to YouTube in {browser}. Please sign in first."
+            }))
+            return 1
+
+    # 2. Try copy workaround (for locked DBs)
+    success, error = extract_cookies_with_copy(browser, output_path)
+
     if success:
-        print(json.dumps({
-            "status": "success",
-            "cookies_path": output_path,
-            "message": "Connected using copy workaround"
-        }))
-        return 0
-    else:
-        print(json.dumps({
-            "status": "error",
-            "message": "Failed to extract cookies. Make sure you are logged in.",
-            "debug": error
-        }))
-        return 1
+        if verify_connection(output_path):
+            print(json.dumps({
+                "status": "success",
+                "cookies_path": output_path,
+                "message": "Connected successfully"
+            }))
+            return 0
+        else:
+            print(json.dumps({
+                "status": "error",
+                "message": f"Not logged in to YouTube in {browser}. Please sign in first."
+            }))
+            return 1
+
+    # Both methods failed
+    print(json.dumps({
+        "status": "error",
+        "message": f"Failed to extract cookies from {browser}. Try closing the browser.",
+        "debug": error
+    }))
+    return 1
 
 if __name__ == "__main__":
     sys.exit(main())

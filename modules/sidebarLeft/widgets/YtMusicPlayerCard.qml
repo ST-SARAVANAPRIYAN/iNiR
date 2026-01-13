@@ -170,7 +170,7 @@ Item {
                     color: ColorUtils.transparentize("black", 0.5)
                     visible: YtMusic.loading
 
-                    BusyIndicator { anchors.centerIn: parent; running: true; implicitWidth: 24; implicitHeight: 24 }
+                    MaterialLoadingIndicator { anchors.centerIn: parent; implicitSize: 24; loading: true }
                 }
 
                 // Now Playing indicator

@@ -99,6 +99,8 @@ Singleton {
 
     // === MPRIS Player Reference ===
     property MprisPlayer _mpvPlayer: null
+    // Public accessor for MprisController to detect YtMusic's player
+    readonly property MprisPlayer mpvPlayer: _mpvPlayer
     
     // Find mpv player using Instantiator pattern (like MprisController)
     Instantiator {
@@ -738,14 +740,33 @@ Singleton {
     property string _playUrl: ""
     property string _importPlaylistUrl: ""
     property string _importPlaylistName: ""
-    
-    property var _cookieArgs: root.customCookiesPath 
-        ? ["--cookies", root.customCookiesPath] 
-        : ["--cookies-from-browser", root.googleBrowser]
 
-    property string _mpvCookieArgs: root.customCookiesPath
-        ? "cookies=" + root.customCookiesPath
-        : "cookies-from-browser=" + root.googleBrowser
+    // Path to generated cookies file (in config dir for persistence)
+    readonly property string _cookiesFilePath: Directories.config + "/yt-cookies.txt"
+
+    // Firefox forks that need special handling (use cookies file instead of cookies-from-browser)
+    readonly property var _firefoxForks: ["zen", "librewolf", "floorp", "waterfox"]
+
+    // Get cookie argument string for yt-dlp commands (used with bash -c)
+    readonly property string _cookieArgStr: root.customCookiesPath
+        ? ("--cookies '" + root.customCookiesPath + "'")
+        : (_firefoxForks.includes(root.googleBrowser)
+            ? ("--cookies '" + root._cookiesFilePath + "'")
+            : ("--cookies-from-browser " + root.googleBrowser))
+
+    // Keep array version for backward compatibility with existing processes
+    property var _cookieArgs: root.customCookiesPath
+        ? ["--cookies", root.customCookiesPath]
+        : (_firefoxForks.includes(root.googleBrowser)
+            ? ["--cookies", root._cookiesFilePath]
+            : ["--cookies-from-browser", root.googleBrowser])
+
+    // Path to cookies file for mpv (native --cookies-file option)
+    // This passes cookies to both yt-dlp AND ffmpeg (needed for HLS segments)
+    // Always use the generated cookies file if it exists, regardless of browser type
+    readonly property string _mpvCookiesFile: root.customCookiesPath
+        ? root.customCookiesPath
+        : root._cookiesFilePath  // Always fallback to generated file
 
     function _getThumbnailUrl(videoId): string {
         if (!videoId) return ""
@@ -954,6 +975,10 @@ Singleton {
             if (code === 0 && stdOutput.trim().length > 0) {
                 root.googleConnected = true
                 root.googleError = ""
+                // Generate cookies file for mpv if not already set
+                if (!root.customCookiesPath) {
+                    _exportCookiesProc.running = true
+                }
             } else {
                 root.googleConnected = false
                 // Parse error to give helpful message
@@ -969,6 +994,23 @@ Singleton {
                 } else {
                     root.googleError = Translation.tr("Not authenticated. Sign in to YouTube in your browser first.")
                 }
+            }
+        }
+    }
+
+    // Export cookies to file for mpv (runs after successful _googleCheckProc)
+    Process {
+        id: _exportCookiesProc
+        command: ["python3", Directories.scriptPath + "/ytmusic_auth.py", root.googleBrowser]
+        stdout: SplitParser {
+            onRead: line => {
+                try {
+                    const res = JSON.parse(line)
+                    if (res.status === "success" && res.cookies_path) {
+                        root.customCookiesPath = res.cookies_path
+                        Config.setNestedValue('sidebar.ytmusic.cookiesPath', res.cookies_path)
+                    }
+                } catch (e) {}
             }
         }
     }
@@ -1043,7 +1085,7 @@ Singleton {
             "--force-media-title=" + root.currentTitle + (root.currentArtist ? " - " + root.currentArtist : ""),
             "--metadata-codepage=utf-8",
             "--script-opts=ytdl_hook-ytdl_path=yt-dlp",
-            ...(root.googleConnected ? ["--ytdl-raw-options=" + root._mpvCookieArgs] : []),
+            ...(root.googleConnected && root._mpvCookiesFile ? ["--ytdl-raw-options=cookies=" + root._mpvCookiesFile] : []),
             root._playUrl
         ]
         onRunningChanged: {
@@ -1063,25 +1105,24 @@ Singleton {
     }
 
     // Fetch YouTube playlists from account
+    // Fetch YouTube Music playlists
     Process {
         id: _ytPlaylistsProc
         property var results: []
-        command: ["/usr/bin/yt-dlp",
-            ...root._cookieArgs,
-            "--flat-playlist",
-            "--no-warnings",
-            "-j",
-            "https://www.youtube.com/feed/playlists"
+        command: ["/bin/bash", "-c",
+            "yt-dlp " + root._cookieArgStr + " --flat-playlist --no-warnings -j 'https://www.youtube.com/feed/playlists'"
         ]
         stdout: SplitParser {
             onRead: line => {
                 try {
                     const data = JSON.parse(line)
-                    if (data.id && data.title) {
+                    // Filter out system playlists (Liked videos, Watch Later, etc.)
+                    const systemPlaylists = ["LL", "WL", "LM", "RDMM", "RDEM"]
+                    if (data.id && data.title && !systemPlaylists.includes(data.id)) {
                         _ytPlaylistsProc.results.push({
                             id: data.id,
                             title: data.title,
-                            url: data.url || `https://music.youtube.com/playlist?list=${data.id}`,
+                            url: data.url || `https://www.youtube.com/playlist?list=${data.id}`,
                             count: data.playlist_count || 0
                         })
                     }
@@ -1101,13 +1142,8 @@ Singleton {
     Process {
         id: _importPlaylistProc
         property var items: []
-        command: ["/usr/bin/yt-dlp",
-            ...root._cookieArgs,
-            "--flat-playlist",
-            "--no-warnings",
-            "--quiet",
-            "-j",
-            root._importPlaylistUrl
+        command: ["/bin/bash", "-c",
+            "yt-dlp " + root._cookieArgStr + " --flat-playlist --no-warnings --quiet -j '" + root._importPlaylistUrl + "'"
         ]
         stdout: SplitParser {
             onRead: line => {
@@ -1127,12 +1163,14 @@ Singleton {
         }
         onStarted: { items = [] }
         onRunningChanged: {
-            if (!running && items.length > 0) {
-                root.playlists = [...root.playlists, {
-                    name: root._importPlaylistName,
-                    items: items
-                }]
-                root._persistPlaylists()
+            if (!running) {
+                if (items.length > 0) {
+                    root.playlists = [...root.playlists, {
+                        name: root._importPlaylistName,
+                        items: items
+                    }]
+                    root._persistPlaylists()
+                }
                 root.searching = false
             }
         }

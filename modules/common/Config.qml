@@ -844,6 +844,7 @@ Singleton {
                 property JsonObject ytmusic: JsonObject {
                     property bool enable: false
                     property bool autoConnect: true
+                    property bool hideSyncBanner: false
                     property string browser: "firefox"
                     property string cookiesPath: ""
                     property bool shuffleMode: false
@@ -1024,6 +1025,11 @@ Singleton {
                 property int adviseUpdateThreshold: 75
                 property int stronglyAdviseUpdateThreshold: 200
             }
+            property JsonObject welcomeWizard: JsonObject {
+                property bool completed: false
+                property bool skipped: false
+            }
+
             property JsonObject waffles: JsonObject {
                 property JsonObject modules: JsonObject {
                     property bool sidebarLeft: false
