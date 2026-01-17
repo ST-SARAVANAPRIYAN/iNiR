@@ -1,9 +1,6 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
-// From https://git.outfoxxed.me/outfoxxed/nixnew
-// It does not have a license, but the author is okay with redistribution.
-
 import QtQml.Models
 import QtQuick
 import Quickshell
@@ -12,28 +9,18 @@ import Quickshell.Services.Mpris
 import qs
 import qs.modules.common
 
-/**
- * A service that provides easy access to the active Mpris player.
- */
 Singleton {
 	id: root;
 	
-	// Filter duplicate players (plasma-browser-integration, playerctld, etc.)
 	property list<MprisPlayer> players: Mpris.players.values.filter(player => isRealPlayer(player));
 	property MprisPlayer trackedPlayer: null;
 	property MprisPlayer activePlayer: trackedPlayer ?? players[0] ?? null;
 
-	// Detect if active player is YtMusic's mpv instance
-	// Compare directly with YtMusic's tracked player for accurate detection
 	readonly property bool isYtMusicActive: {
+		if (YtMusic.currentVideoId) return true;
 		if (!activePlayer) return false;
-		// Direct comparison with YtMusic's mpv player reference
 		if (YtMusic.mpvPlayer && activePlayer === YtMusic.mpvPlayer) return true;
-		// Fallback: check if YtMusic is playing and this looks like its mpv
-		if (!YtMusic.currentVideoId) return false;
-		const id = (activePlayer.identity ?? "").toLowerCase();
-		const entry = (activePlayer.desktopEntry ?? "").toLowerCase();
-		return (id === "mpv" || entry === "mpv") && YtMusic.isPlaying;
+		return _isYtMusicMpv(activePlayer);
 	}
 	
 	property bool hasPlasmaIntegration: false
@@ -66,11 +53,22 @@ Singleton {
 			   !name.startsWith('org.mpris.MediaPlayer2.playerctld') &&
 			   !(name.endsWith('.mpd') && !name.endsWith('MediaPlayer2.mpd'));
 	}
+	
 	signal trackChanged(reverse: bool);
 
 	property bool __reverse: false;
 
 	property var activeTrack;
+
+	function _isYtMusicMpv(player): bool {
+		if (!player) return false;
+		if (YtMusic.mpvPlayer && player === YtMusic.mpvPlayer) return true;
+		const id = (player.identity ?? "").toLowerCase();
+		const entry = (player.desktopEntry ?? "").toLowerCase();
+		if (id !== "mpv" && !id.includes("mpv") && entry !== "mpv" && !entry.includes("mpv")) return false;
+		const trackUrl = player.metadata?.["xesam:url"] ?? "";
+		return trackUrl.includes("youtube.com") || trackUrl.includes("youtu.be");
+	}
 
 	Instantiator {
 		model: Mpris.players;
@@ -84,24 +82,27 @@ Singleton {
 					root.trackedPlayer = modelData;
 				}
 			}
-
 			Component.onDestruction: {
+				if (root.trackedPlayer === modelData) {
+					root.trackedPlayer = null;
+				}
 				if (root.trackedPlayer == null || !root.trackedPlayer.isPlaying) {
 					for (const player of Mpris.players.values) {
-						if (player.playbackState?.isPlaying) {
+						if (player.isPlaying) {
 							root.trackedPlayer = player;
 							break;
 						}
 					}
-
-					if (trackedPlayer == null && Mpris.players.values.length != 0) {
-						trackedPlayer = Mpris.players.values[0];
+					if (root.trackedPlayer == null && Mpris.players.values.length != 0) {
+						root.trackedPlayer = Mpris.players.values[0];
 					}
 				}
 			}
 
 			function onPlaybackStateChanged() {
-				if (root.trackedPlayer !== modelData) root.trackedPlayer = modelData;
+				if (modelData.isPlaying && root.trackedPlayer !== modelData) {
+					root.trackedPlayer = modelData;
+				}
 			}
 		}
 	}
@@ -114,15 +115,10 @@ Singleton {
 		}
 
 		function onTrackArtUrlChanged() {
-			// console.log("arturl:", activePlayer.trackArtUrl)
-			// root.updateTrack();
 			if (root.activePlayer.uniqueId == root.activeTrack.uniqueId && root.activePlayer.trackArtUrl != root.activeTrack.artUrl) {
-				// cantata likes to send cover updates *BEFORE* updating the track info.
-				// as such, art url changes shouldn't be able to break the reverse animation
 				const r = root.__reverse;
 				root.updateTrack();
 				root.__reverse = r;
-
 			}
 		}
 	}
@@ -130,7 +126,6 @@ Singleton {
 	onActivePlayerChanged: this.updateTrack();
 
 	function updateTrack() {
-		//console.log(`update: ${this.activePlayer?.trackTitle ?? ""} : ${this.activePlayer?.trackArtists}`)
 		this.activeTrack = {
 			uniqueId: this.activePlayer?.uniqueId ?? 0,
 			artUrl: this.activePlayer?.trackArtUrl ?? "",
@@ -146,12 +141,19 @@ Singleton {
 	property bool isPlaying: this.activePlayer && this.activePlayer.isPlaying;
 	property bool canTogglePlaying: this.activePlayer?.canTogglePlaying ?? false;
 	function togglePlaying(): void {
-		if (this.canTogglePlaying) this.activePlayer.togglePlaying();
+		if (root.isYtMusicActive && YtMusic.currentVideoId) {
+			YtMusic.togglePlaying();
+		} else if (this.canTogglePlaying) {
+			this.activePlayer.togglePlaying();
+		}
 	}
 
 	property bool canGoPrevious: this.activePlayer?.canGoPrevious ?? false;
 	function previous(): void {
-		if (this.canGoPrevious) {
+		if (root.isYtMusicActive && YtMusic.currentVideoId) {
+			this.__reverse = true;
+			YtMusic.playPrevious();
+		} else if (this.canGoPrevious) {
 			this.__reverse = true;
 			this.activePlayer.previous();
 		}
@@ -159,7 +161,10 @@ Singleton {
 
 	property bool canGoNext: this.activePlayer?.canGoNext ?? false;
 	function next(): void {
-		if (this.canGoNext) {
+		if (root.isYtMusicActive && YtMusic.currentVideoId) {
+			this.__reverse = false;
+			YtMusic.playNext();
+		} else if (this.canGoNext) {
 			this.__reverse = false;
 			this.activePlayer.next();
 		}
@@ -190,7 +195,6 @@ Singleton {
 		if (targetPlayer && this.activePlayer) {
 			this.__reverse = Mpris.players.indexOf(targetPlayer) < Mpris.players.indexOf(this.activePlayer);
 		} else {
-			// always animate forward if going to null
 			this.__reverse = false;
 		}
 
@@ -207,18 +211,22 @@ Singleton {
 		}
 
 		function playPause(): void {
+			if (root.isYtMusicActive && YtMusic.currentVideoId) {
+				YtMusic.togglePlaying();
+			} else {
+				root.togglePlaying();
+			}
 			GlobalStates.osdMediaAction = root.isPlaying ? "pause" : "play";
-			root.togglePlaying();
 			GlobalStates.osdMediaOpen = true;
 		}
 		function previous(): void {
-			GlobalStates.osdMediaAction = "previous";
 			root.previous();
+			GlobalStates.osdMediaAction = "previous";
 			GlobalStates.osdMediaOpen = true;
 		}
 		function next(): void {
-			GlobalStates.osdMediaAction = "next";
 			root.next();
+			GlobalStates.osdMediaAction = "next";
 			GlobalStates.osdMediaOpen = true;
 		}
 	}

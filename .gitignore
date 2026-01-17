@@ -15,6 +15,7 @@ AGENTS.md
 CLAUDE.md
 **/CLAUDE.md
 prompts/
+.continue/
 
 # WIP documentation (not for distribution)
 docs/*_IMPLEMENTATION.md

@@ -907,6 +907,7 @@ Item {
         function _playLiked(shuffle) {
             let items = [...YtMusic.likedSongs]
             if (items.length === 0) return
+            let startIndex = 0
             if (shuffle) { 
                 for (let i = items.length - 1; i > 0; i--) { 
                     const j = Math.floor(Math.random() * (i + 1))
@@ -915,8 +916,7 @@ Item {
                     items[j] = temp
                 } 
             }
-            YtMusic.queue = items.slice(1)
-            YtMusic.play(items[0])
+            YtMusic.playFromPlaylist(items, startIndex, "liked")
         }
 
         ListView {
@@ -1079,7 +1079,7 @@ Item {
                 showIndex: true
                 showRemoveButton: true
                 showAddToQueue: false
-                onPlayRequested: YtMusic.play(modelData)
+                onPlayRequested: YtMusic.playFromPlaylist(YtMusic.playlists[expandedPlaylist]?.items ?? [], index, "playlist:" + (YtMusic.playlists[expandedPlaylist]?.name ?? ""))
                 onRemoveRequested: YtMusic.removeFromPlaylist(expandedPlaylist, index)
             }
             PagePlaceholder {
@@ -1106,7 +1106,7 @@ Item {
                 width: ListView.view?.width ?? 200
                 track: modelData
                 showAddToPlaylist: true
-                onPlayRequested: YtMusic.play(modelData)
+                onPlayRequested: YtMusic.playFromLiked(index)
                 onAddToPlaylistRequested: root.openAddToPlaylist(modelData)
             }
             PagePlaceholder {

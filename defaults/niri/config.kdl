@@ -286,10 +286,10 @@ binds {
     XF86AudioMute allow-when-locked=true { spawn "qs" "-c" "ii" "ipc" "call" "audio" "mute"; }
     XF86AudioMicMute allow-when-locked=true { spawn "qs" "-c" "ii" "ipc" "call" "audio" "micMute"; }
 
-    // Music control (playerctl)
-    Ctrl+Mod+Space { spawn "playerctl" "play-pause"; }
-    Mod+Alt+N { spawn "playerctl" "next"; }
-    Mod+Alt+P { spawn "playerctl" "previous"; }
+    // Music control (uses MPRIS - works with YtMusic and other players)
+    Ctrl+Mod+Space { spawn "qs" "-c" "ii" "ipc" "call" "mpris" "playPause"; }
+    Mod+Alt+N { spawn "qs" "-c" "ii" "ipc" "call" "mpris" "next"; }
+    Mod+Alt+P { spawn "qs" "-c" "ii" "ipc" "call" "mpris" "previous"; }
 }
 
 
