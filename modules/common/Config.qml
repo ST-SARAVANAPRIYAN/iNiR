@@ -91,6 +91,10 @@ Singleton {
         onLoaded: root.ready = true
         onLoadFailed: error => {
             if (error == FileViewError.FileNotFound) {
+                console.log("[Config] File not found, creating new file.")
+                // Ensure parent directory exists
+                const parentDir = root.filePath.substring(0, root.filePath.lastIndexOf('/'))
+                Process.exec(["/usr/bin/mkdir", "-p", parentDir])
                 writeAdapter();
             }
             // Set ready even on failure so UI doesn't stay blank

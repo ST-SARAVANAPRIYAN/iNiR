@@ -35,6 +35,9 @@ Singleton {
         path: Qt.resolvedUrl(firstRunFilePath)
         onLoadFailed: (error) => {
             if (error == FileViewError.FileNotFound) {
+                // Ensure parent directory exists
+                const parentDir = root.firstRunFilePath.substring(0, root.firstRunFilePath.lastIndexOf('/'))
+                Process.exec(["/usr/bin/mkdir", "-p", parentDir])
                 firstRunFileView.setText(root.firstRunFileContent)
                 root.handleFirstRun()
             }

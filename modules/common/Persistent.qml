@@ -49,6 +49,10 @@ Singleton {
         onLoadFailed: error => {
             console.log("Failed to load persistent states file:", error);
             if (error == FileViewError.FileNotFound) {
+                console.log("[Persistent] File not found, creating new file.")
+                // Ensure parent directory exists
+                const parentDir = root.filePath.substring(0, root.filePath.lastIndexOf('/'))
+                Process.exec(["/usr/bin/mkdir", "-p", parentDir])
                 fileWriteTimer.restart();
             }
         }
