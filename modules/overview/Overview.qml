@@ -68,10 +68,19 @@ Scope {
                 id: backdropClickArea
                 anchors.fill: parent
                 onClicked: mouse => {
-                    // Cierra solo si el click es fuera del contenido principal
-                    const localPos = mapToItem(columnLayout, mouse.x, mouse.y)
-                    if (localPos.x < 0 || localPos.x > columnLayout.width
-                            || localPos.y < 0 || localPos.y > columnLayout.height) {
+                    // Cierra solo si el click es fuera del contenido visible
+                    // Check against searchWidget and overviewLoader, not columnLayout
+                    // because columnLayout fills the whole window height
+                    const searchPos = mapToItem(searchWidget, mouse.x, mouse.y)
+                    const inSearch = searchPos.x >= 0 && searchPos.x <= searchWidget.width &&
+                                     searchPos.y >= 0 && searchPos.y <= searchWidget.height
+                    
+                    const overviewPos = overviewLoader.item ? mapToItem(overviewLoader.item, mouse.x, mouse.y) : null
+                    const inOverview = overviewLoader.item && overviewPos &&
+                                       overviewPos.x >= 0 && overviewPos.x <= overviewLoader.item.width &&
+                                       overviewPos.y >= 0 && overviewPos.y <= overviewLoader.item.height
+                    
+                    if (!inSearch && !inOverview) {
                         GlobalStates.overviewOpen = false
                     }
                 }
