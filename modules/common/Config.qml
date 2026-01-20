@@ -584,6 +584,9 @@ Singleton {
                 property bool smartIndicator: true // Show which window is focused
                 property bool showAllWindowDots: true // Show dots for all windows (even inactive apps)
                 property int maxIndicatorDots: 5 // Maximum dots to show
+                // Window preview on hover
+                property bool hoverPreview: true // Show window preview popup on hover
+                property int hoverPreviewDelay: 400 // Delay before showing preview (ms)
             }
 
             property JsonObject interactions: JsonObject {
@@ -713,6 +716,7 @@ Singleton {
                 property int scrollWorkspaceSteps: 2
                 property bool keepOverviewOpenOnWindowClick: true
                 property bool closeAfterWindowMove: true
+                property bool showPreviews: true // Show window thumbnails in overview
             }
 
             // Settings for the custom Alt-Tab switcher in ii

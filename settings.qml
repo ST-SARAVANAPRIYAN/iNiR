@@ -307,6 +307,14 @@ ApplicationWindow {
         {
             pageIndex: 5,
             pageName: pages[5].name,
+            section: Translation.tr("Dock"),
+            label: Translation.tr("Window preview"),
+            description: Translation.tr("Show window preview on hover"),
+            keywords: ["dock", "preview", "hover", "window", "thumbnail"]
+        },
+        {
+            pageIndex: 5,
+            pageName: pages[5].name,
             section: Translation.tr("Lock screen"),
             label: Translation.tr("Lock screen"),
             description: Translation.tr("Lock screen behaviour and style"),
@@ -351,6 +359,14 @@ ApplicationWindow {
             label: Translation.tr("Overview"),
             description: Translation.tr("Overview scale, rows and columns"),
             keywords: ["overview", "grid", "rows", "columns"]
+        },
+        {
+            pageIndex: 5,
+            pageName: pages[5].name,
+            section: Translation.tr("Overview"),
+            label: Translation.tr("Window previews"),
+            description: Translation.tr("Show window thumbnails in overview"),
+            keywords: ["overview", "preview", "window", "thumbnail"]
         },
         {
             pageIndex: 5,

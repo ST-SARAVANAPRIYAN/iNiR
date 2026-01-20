@@ -552,6 +552,38 @@ ContentPage {
                     }
                 }
             }
+
+            ContentSubsection {
+                title: Translation.tr("Window preview")
+
+                SettingsSwitch {
+                    buttonIcon: "preview"
+                    text: Translation.tr("Show preview on hover")
+                    checked: Config.options.dock.hoverPreview !== false
+                    onCheckedChanged: {
+                        Config.options.dock.hoverPreview = checked;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Display a live preview of windows when hovering over dock icons")
+                    }
+                }
+
+                ConfigSpinBox {
+                    icon: "timer"
+                    text: Translation.tr("Hover delay (ms)")
+                    value: Config.options.dock.hoverPreviewDelay ?? 400
+                    from: 0
+                    to: 1000
+                    stepSize: 50
+                    enabled: Config.options.dock.hoverPreview !== false
+                    onValueChanged: {
+                        Config.options.dock.hoverPreviewDelay = value;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Time to wait before showing window preview")
+                    }
+                }
+            }
         }
     }
 
@@ -2305,6 +2337,19 @@ ContentPage {
                 }
                 StyledToolTip {
                     text: Translation.tr("Center app icons in the launcher grid")
+                }
+            }
+            SettingsSwitch {
+                buttonIcon: "preview"
+                text: Translation.tr("Show window previews")
+                checked: Config.options?.overview?.showPreviews !== false
+                onCheckedChanged: {
+                    if (!Config.options.overview)
+                        Config.options.overview = ({})
+                    Config.options.overview.showPreviews = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Display thumbnail previews of windows in the overview")
                 }
             }
             ConfigSpinBox {
