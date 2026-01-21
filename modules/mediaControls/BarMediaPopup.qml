@@ -123,9 +123,11 @@ Item {
             }
         }
 
-        // No player placeholder
+        // No player placeholder - only show if truly no players after debounce
         Item {
-            visible: (root._cacheValid ? root._playerCache : root.meaningfulPlayers).length === 0
+            id: placeholderItem
+            // Never show placeholder while cache is valid (during transitions)
+            visible: !root._cacheValid && root.meaningfulPlayers.length === 0 && MprisController.players.length === 0
             Layout.fillWidth: true
             implicitWidth: placeholderBackground.implicitWidth + Appearance.sizes.elevationMargin
             implicitHeight: placeholderBackground.implicitHeight + Appearance.sizes.elevationMargin
