@@ -23,18 +23,17 @@ Item {
     })
     
     // Count connected outputs for screen cast feature
-    readonly property int connectedOutputs: outputCountProcess.running ? 0 : outputCountProcess.outputCount
+    property int connectedOutputs: 1
     
     Process {
         id: outputCountProcess
         command: ["niri", "msg", "outputs"]
         running: CompositorService.isNiri
-        property int outputCount: 0
         
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0) {
-                const lines = stdout.split('\n');
-                outputCount = lines.filter(line => line.trim().startsWith('Output "')).length;
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.split('\n');
+                root.connectedOutputs = lines.filter(line => line.trim().startsWith('Output "')).length;
             }
         }
     }
