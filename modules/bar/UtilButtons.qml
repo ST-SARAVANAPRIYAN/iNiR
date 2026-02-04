@@ -21,6 +21,23 @@ Item {
         const tgt = link?.target?.name ?? "";
         return src === "niri" || tgt === "niri";
     })
+    
+    // Count connected outputs for screen cast feature
+    readonly property int connectedOutputs: outputCountProcess.running ? 0 : outputCountProcess.outputCount
+    
+    Process {
+        id: outputCountProcess
+        command: ["niri", "msg", "outputs"]
+        running: CompositorService.isNiri
+        property int outputCount: 0
+        
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                const lines = stdout.split('\n');
+                outputCount = lines.filter(line => line.trim().startsWith('Output "')).length;
+            }
+        }
+    }
 
     RowLayout {
         id: rowLayout
@@ -162,8 +179,11 @@ Item {
         }
 
         // Screen casting control button (PR #29 by levpr1c)
+        // Only available with 2+ monitors on Niri
         Loader {
-            active: Config.options?.bar?.utilButtons?.showScreenCast ?? false
+            active: (Config.options?.bar?.utilButtons?.showScreenCast ?? false) 
+                    && CompositorService.isNiri 
+                    && root.connectedOutputs >= 2
             visible: active
             sourceComponent: CircleUtilButton {
                 id: screenCastButton

@@ -649,7 +649,7 @@ ContentPage {
                     checked: Config.options.bar.utilButtons.showScreenCast
                     onCheckedChanged: Config.options.bar.utilButtons.showScreenCast = checked
                     StyledToolTip {
-                        text: Translation.tr("Toggle Niri screen casting to external monitor")
+                        text: Translation.tr("Toggle Niri screen casting to external monitor (requires 2+ monitors)")
                     }
                 }
                 SettingsSwitch {
@@ -659,34 +659,34 @@ ContentPage {
                     onCheckedChanged: Config.options.bar.utilButtons.showNotepad = checked
                 }
             }
-
-            ConfigRow {
-                uniform: true
+            
+            StyledText {
                 visible: Config.options.bar.utilButtons.showScreenCast
-                
-                ContentSubsection {
-                    title: Translation.tr("Cast output")
-                    Layout.fillWidth: true
-                    
-                    ConfigTextField {
-                        Layout.fillWidth: true
-                        placeholderText: "HDMI-A-1"
-                        text: Config.options.bar.utilButtons.screenCastOutput
-                        onTextChanged: {
-                            if (text !== Config.options.bar.utilButtons.screenCastOutput) {
-                                Config.options.bar.utilButtons.screenCastOutput = text
-                            }
-                        }
-                    }
-                    
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: Translation.tr("Run 'niri msg outputs' to find your output name")
-                        color: Appearance.colors.colSubtext
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        wrapMode: Text.WordWrap
-                    }
+                Layout.fillWidth: true
+                text: Translation.tr("Note: Screen cast button only appears when 2+ monitors are connected")
+                color: Appearance.colors.colSubtext
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                wrapMode: Text.WordWrap
+            }
+
+            MaterialTextArea {
+                visible: Config.options.bar.utilButtons.showScreenCast
+                Layout.fillWidth: true
+                placeholderText: "HDMI-A-2"
+                text: Config.options.bar.utilButtons.screenCastOutput
+                wrapMode: TextEdit.NoWrap
+                onTextChanged: {
+                    Config.options.bar.utilButtons.screenCastOutput = text
                 }
+            }
+            
+            StyledText {
+                visible: Config.options.bar.utilButtons.showScreenCast
+                Layout.fillWidth: true
+                text: Translation.tr("Run 'niri msg outputs' to find your output name")
+                color: Appearance.colors.colSubtext
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                wrapMode: Text.WordWrap
             }
 
             SettingsDivider {}
