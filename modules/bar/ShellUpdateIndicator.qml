@@ -95,117 +95,132 @@ MouseArea {
         }
     }
 
-    // Hover popup with update details
+    // Hover popup (follows BatteryPopup / ResourcesPopup pattern)
     StyledPopup {
         id: updatePopup
         hoverTarget: root
 
+        component InfoRow: RowLayout {
+            id: infoRow
+            required property string icon
+            required property string label
+            required property string value
+            property color valueColor: Appearance.colors.colOnSurfaceVariant
+            spacing: 4
+
+            MaterialSymbol {
+                text: infoRow.icon
+                color: Appearance.colors.colOnSurfaceVariant
+                iconSize: Appearance.font.pixelSize.large
+            }
+            StyledText {
+                text: infoRow.label
+                color: Appearance.colors.colOnSurfaceVariant
+            }
+            StyledText {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignRight
+                color: infoRow.valueColor
+                text: infoRow.value
+            }
+        }
+
         ColumnLayout {
-            spacing: 6
+            spacing: 4
 
             // Header
-            RowLayout {
-                spacing: 8
+            Row {
+                spacing: 5
 
                 MaterialSymbol {
+                    anchors.verticalCenter: parent.verticalCenter
+                    fill: 0
+                    font.weight: Font.Medium
                     text: "system_update_alt"
-                    iconSize: Appearance.font.pixelSize.larger
-                    color: root.accentColor
+                    iconSize: Appearance.font.pixelSize.large
+                    color: Appearance.colors.colOnSurfaceVariant
                 }
 
                 StyledText {
-                    text: Translation.tr("iNiR Update Available")
-                    font.pixelSize: Appearance.font.pixelSize.normal
-                    font.weight: Font.DemiBold
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Translation.tr("iNiR Update")
+                    font {
+                        weight: Font.Medium
+                        pixelSize: Appearance.font.pixelSize.normal
+                    }
                     color: Appearance.colors.colOnSurfaceVariant
                 }
             }
 
-            // Version info
-            ColumnLayout {
-                spacing: 2
-
-                RowLayout {
-                    StyledText {
-                        text: Translation.tr("Current:")
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colSubtext
-                    }
-                    Item { Layout.fillWidth: true }
-                    StyledText {
-                        text: ShellUpdates.localCommit || "\u2014"
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.family: Appearance.font.family.monospace
-                        color: Appearance.colors.colOnSurfaceVariant
-                    }
-                }
-
-                RowLayout {
-                    StyledText {
-                        text: Translation.tr("Available:")
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colSubtext
-                    }
-                    Item { Layout.fillWidth: true }
-                    StyledText {
-                        text: ShellUpdates.remoteCommit || "\u2014"
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.family: Appearance.font.family.monospace
-                        font.weight: Font.DemiBold
-                        color: root.accentColor
-                    }
-                }
-
-                RowLayout {
-                    StyledText {
-                        text: Translation.tr("Commits behind:")
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colSubtext
-                    }
-                    Item { Layout.fillWidth: true }
-                    StyledText {
-                        text: ShellUpdates.commitsBehind.toString()
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.weight: Font.Bold
-                        color: ShellUpdates.commitsBehind > 10
-                            ? Appearance.m3colors.m3error
-                            : root.accentColor
-                    }
-                }
+            // Version info rows
+            InfoRow {
+                icon: "tag"
+                label: Translation.tr("Current:")
+                value: ShellUpdates.localCommit || "\u2014"
+            }
+            InfoRow {
+                icon: "upgrade"
+                label: Translation.tr("Available:")
+                value: ShellUpdates.remoteCommit || "\u2014"
+                valueColor: Appearance.m3colors.m3primary
+            }
+            InfoRow {
+                icon: "commit"
+                label: Translation.tr("Behind:")
+                value: ShellUpdates.commitsBehind.toString()
+                valueColor: ShellUpdates.commitsBehind > 10
+                    ? Appearance.m3colors.m3error
+                    : Appearance.m3colors.m3primary
             }
 
             // Latest commit message
-            StyledText {
-                Layout.fillWidth: true
-                Layout.maximumWidth: 240
+            RowLayout {
+                spacing: 4
                 visible: ShellUpdates.latestMessage.length > 0
-                text: ShellUpdates.latestMessage
-                font.pixelSize: Appearance.font.pixelSize.smallest
-                font.family: Appearance.font.family.monospace
-                color: Appearance.colors.colSubtext
-                elide: Text.ElideRight
-                maximumLineCount: 2
-                wrapMode: Text.WordWrap
+                Layout.maximumWidth: 260
+
+                MaterialSymbol {
+                    text: "notes"
+                    color: Appearance.colors.colOnSurfaceVariant
+                    iconSize: Appearance.font.pixelSize.large
+                }
+                StyledText {
+                    Layout.fillWidth: true
+                    text: ShellUpdates.latestMessage
+                    font.family: Appearance.font.family.monospace
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: Appearance.colors.colOnSurfaceVariant
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    wrapMode: Text.NoWrap
+                }
             }
 
-            // Error message
-            StyledText {
-                Layout.fillWidth: true
-                Layout.maximumWidth: 240
+            // Error
+            RowLayout {
+                spacing: 4
                 visible: ShellUpdates.lastError.length > 0
-                text: ShellUpdates.lastError
-                font.pixelSize: Appearance.font.pixelSize.smallest
-                color: Appearance.m3colors.m3error
-                wrapMode: Text.WordWrap
+                Layout.maximumWidth: 260
+
+                MaterialSymbol {
+                    text: "error"
+                    color: Appearance.m3colors.m3error
+                    iconSize: Appearance.font.pixelSize.large
+                }
+                StyledText {
+                    Layout.fillWidth: true
+                    text: ShellUpdates.lastError
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: Appearance.m3colors.m3error
+                    wrapMode: Text.WordWrap
+                }
             }
 
             // Hint
             StyledText {
-                Layout.fillWidth: true
-                Layout.maximumWidth: 240
-                text: Translation.tr("Click to update • Right-click to dismiss")
+                text: Translation.tr("Click to update \u2022 Right-click to dismiss")
                 font.pixelSize: Appearance.font.pixelSize.smallest
-                color: Appearance.colors.colSubtext
+                color: Appearance.colors.colOnSurfaceVariant
                 opacity: 0.6
             }
         }

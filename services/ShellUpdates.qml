@@ -46,7 +46,15 @@ Singleton {
         if (isUpdating || !hasUpdate) return
         root.isUpdating = true
         root.lastError = ""
-        updateProc.running = true
+        // Use execDetached so the update script survives shell restart
+        // (./setup update calls qs kill -c ii at the end)
+        Quickshell.execDetached(["bash", root.repoPath + "/setup", "update", "-y", "-q"])
+        print("[ShellUpdates] Update launched (detached)")
+        // Shell will be restarted by ./setup update, so just mark state
+        root.hasUpdate = false
+        root.commitsBehind = 0
+        root.lastError = ""
+        Config.setNestedValue("shellUpdates.dismissedCommit", "")
     }
 
     function dismiss(): void {
@@ -222,29 +230,6 @@ Singleton {
         }
     }
 
-    // Update process: runs ./setup update -y -q
-    Process {
-        id: updateProc
-        running: false
-        command: ["bash", root.repoPath + "/setup", "update", "-y", "-q"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                print("[ShellUpdates] Update output: " + (text ?? "").trim().split("\n").slice(-3).join(" | "))
-            }
-        }
-        onExited: (exitCode, exitStatus) => {
-            root.isUpdating = false
-            if (exitCode === 0) {
-                root.hasUpdate = false
-                root.commitsBehind = 0
-                root.lastError = ""
-                // Clear dismissed commit since we're now up to date
-                Config.setNestedValue("shellUpdates.dismissedCommit", "")
-                print("[ShellUpdates] Update completed successfully")
-            } else {
-                root.lastError = "Update failed (exit " + exitCode + "). Try manually: ./setup update"
-                print("[ShellUpdates] Update failed with exit code " + exitCode)
-            }
-        }
-    }
+    // Note: Update runs via Quickshell.execDetached() in performUpdate()
+    // so it survives the shell restart that ./setup update triggers.
 }
