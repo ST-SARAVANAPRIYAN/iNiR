@@ -43,10 +43,39 @@ apply_term() {
 
   sed -i "s/\$alpha/$term_alpha/g" "$STATE_DIR"/user/generated/terminal/sequences.txt
 
-  for file in /dev/pts/*; do
-    if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
+  # Only write OSC sequences to PTYs that have an interactive shell (fish, bash, zsh, etc.)
+  # Writing to non-shell PTYs (quickshell, IDE, cat, etc.) can crash those processes
+  local seq_file="$STATE_DIR/user/generated/terminal/sequences.txt"
+  local shell_pids
+  shell_pids=$(pgrep -x "fish|bash|zsh|nu|elvish|xonsh" 2>/dev/null || true)
+
+  if [[ -z "$shell_pids" ]]; then
+    return
+  fi
+
+  # Build a set of safe PTY numbers from interactive shells
+  local safe_pts=()
+  for pid in $shell_pids; do
+    # Get the controlling terminal of the shell process
+    local tty_nr
+    tty_nr=$(readlink /proc/"$pid"/fd/0 2>/dev/null || true)
+    if [[ "$tty_nr" =~ ^/dev/pts/([0-9]+)$ ]]; then
+      local pts_num="${BASH_REMATCH[1]}"
+      # Avoid duplicates
+      local already=false
+      for existing in "${safe_pts[@]}"; do
+        [[ "$existing" == "$pts_num" ]] && already=true && break
+      done
+      $already || safe_pts+=("$pts_num")
+    fi
+  done
+
+  # Write sequences only to PTYs with interactive shells
+  for pts_num in "${safe_pts[@]}"; do
+    local pts_file="/dev/pts/$pts_num"
+    if [[ -w "$pts_file" ]]; then
       {
-      cat "$STATE_DIR"/user/generated/terminal/sequences.txt >"$file"
+        cat "$seq_file" > "$pts_file"
       } & disown || true
     fi
   done
