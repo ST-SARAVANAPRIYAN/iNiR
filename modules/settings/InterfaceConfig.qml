@@ -791,6 +791,18 @@ ContentPage {
                 }
             }
 
+            ConfigSwitch {
+                buttonIcon: "history"
+                text: Translation.tr("Use legacy counter (not recommended)")
+                checked: Config.options?.notifications?.useLegacyCounter ?? false
+                onCheckedChanged: {
+                    Config.setNestedValue("notifications.useLegacyCounter", checked)
+                }
+                StyledToolTip {
+                    text: Translation.tr("Use old manual counter instead of auto-syncing with popup list.\nDisabling this fixes the issue where externally cleared notifications (e.g., Discord) don't update the badge.\nOnly enable if you prefer the old behavior.")
+                }
+            }
+
             ContentSubsection {
                 title: Translation.tr("Anchor")
 

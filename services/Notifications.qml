@@ -112,8 +112,11 @@ Singleton {
         }
     }
     
-    // Unread count is now computed from popupList length
-    readonly property int unread: popupList.length
+    // Unread count: computed from popupList (new) or manual counter (legacy)
+    property int _manualUnreadCounter: 0
+    readonly property int unread: (Config.options?.notifications?.useLegacyCounter ?? false) 
+                                    ? _manualUnreadCounter 
+                                    : popupList.length
     
     property var filePath: Directories.notificationsPath
     property list<Notif> list: []
@@ -323,6 +326,11 @@ Singleton {
                         "interval": timeout,
                     });
                 }
+                
+                // Legacy mode: increment manual counter
+                if (Config.options?.notifications?.useLegacyCounter ?? false) {
+                    root._manualUnreadCounter++;
+                }
             }
             root.notify(newNotifObject);
             // console.log(notifToString(newNotifObject));
@@ -331,13 +339,18 @@ Singleton {
     }
 
     function markAllRead() {
-        // Mark all popup notifications as read by removing popup flag
-        root.list.forEach((notif) => {
-            if (notif.popup) {
-                notif.popup = false;
-            }
-        });
-        triggerListChange();
+        if (Config.options?.notifications?.useLegacyCounter ?? false) {
+            // Legacy mode: just reset the manual counter
+            root._manualUnreadCounter = 0;
+        } else {
+            // New mode: mark all popup notifications as read by removing popup flag
+            root.list.forEach((notif) => {
+                if (notif.popup) {
+                    notif.popup = false;
+                }
+            });
+            triggerListChange();
+        }
     }
 
     function discardNotification(id) {
