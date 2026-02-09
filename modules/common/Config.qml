@@ -595,6 +595,8 @@ Singleton {
                 // Window preview on hover
                 property bool hoverPreview: true // Show window preview popup on hover
                 property int hoverPreviewDelay: 400 // Delay before showing preview (ms)
+                // Drag & drop reordering
+                property bool enableDragReorder: true // Allow drag to reorder pinned apps
             }
 
             property JsonObject interactions: JsonObject {

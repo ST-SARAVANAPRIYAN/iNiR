@@ -164,6 +164,11 @@ DockButton {
     }
 
     onClicked: {
+        // Suppress the click that RippleButton fires after a drag-release
+        if (appListRoot?._suppressNextClick) {
+            appListRoot._suppressNextClick = false
+            return
+        }
         // Sin ventanas abiertas: lanzar nueva instancia desde desktop entry o fallbacks
         if (appToplevel.toplevels.length === 0) {
             launchFromDesktopEntry();

@@ -189,15 +189,8 @@
     "cornerStyle": 2,
     "customRounding": -1,
     "edgeModulesLayout": {
-      "leftOrder": [
-        "leftSidebarButton",
-        "activeWindow"
-      ],
-      "rightOrder": [
-        "rightSidebarButton",
-        "sysTray",
-        "weather"
-      ]
+      "leftOrder": ["leftSidebarButton", "activeWindow"],
+      "rightOrder": ["rightSidebarButton", "sysTray", "weather"]
     },
     "floatStyleShadow": true,
     "indicators": {
@@ -277,18 +270,7 @@
     "workspaces": {
       "alwaysShowNumbers": true,
       "monochromeIcons": true,
-      "numberMap": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10"
-      ],
+      "numberMap": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
       "scrollBehavior": "workspace",
       "showAppIcons": false,
       "showNumberDelay": 300,
@@ -322,14 +304,12 @@
     "hoverToReveal": true,
     "ignoredAppRegexes": [],
     "monochromeIcons": true,
-    "pinnedApps": [
-      "org.gnome.Nautilus",
-      "firefox"
-    ],
+    "pinnedApps": ["org.gnome.Nautilus", "firefox"],
     "pinnedOnStartup": true,
     "showBackground": false,
     "iconSize": 35,
-    "separatePinnedFromRunning": true
+    "separatePinnedFromRunning": true,
+    "enableDragReorder": true
   },
   "hacks": {
     "arbitraryRaceConditionDelay": 20
@@ -475,9 +455,7 @@
   },
   "search": {
     "engineBaseUrl": "https://www.google.com/search?q=",
-    "excludedSites": [
-      "quora.com"
-    ],
+    "excludedSites": ["quora.com"],
     "imageSearch": {
       "imageSearchEngineBaseUrl": "https://lens.google.com/uploadbyurl?url=",
       "useCircleSelection": false
@@ -601,13 +579,7 @@
     },
     "reddit": {
       "enable": false,
-      "subreddits": [
-        "unixporn",
-        "linux",
-        "archlinux",
-        "kde",
-        "gnome"
-      ],
+      "subreddits": ["unixporn", "linux", "archlinux", "kde", "gnome"],
       "limit": 25
     },
     "widgets": {
@@ -633,10 +605,7 @@
       "spacing": 8,
       "crypto_settings": {
         "refreshInterval": 60,
-        "coins": [
-          "bitcoin",
-          "ethereum"
-        ]
+        "coins": ["bitcoin", "ethereum"]
       },
       "glance": {
         "showVolume": true,
