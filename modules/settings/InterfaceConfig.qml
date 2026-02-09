@@ -7,7 +7,6 @@ import qs.modules.common.widgets
 
 ContentPage {
     id: root
-    forceWidth: true
     settingsPageIndex: 5
     settingsPageName: Translation.tr("Interface")
 
@@ -2815,6 +2814,82 @@ ContentPage {
                 }
                 StyledToolTip {
                     text: Translation.tr("Use your system's native file picker instead of the built-in one")
+                }
+            }
+        }
+    }
+
+    SettingsCardSection {
+        expanded: false
+        icon: "web_asset"
+        title: Translation.tr("Settings UI")
+
+        SettingsGroup {
+            StyledText {
+                Layout.fillWidth: true
+                text: Translation.tr("Choose how the Settings window opens. Overlay mode renders settings as a layer on top of the shell, so you can see changes to the bar, sidebars, and background in real time.")
+                color: Appearance.colors.colOnSurfaceVariant
+                font.pixelSize: Appearance.font.pixelSize.small
+                wrapMode: Text.WordWrap
+            }
+
+            SettingsSwitch {
+                buttonIcon: "layers"
+                text: Translation.tr("Overlay mode (live preview)")
+                checked: Config.options?.settingsUi?.overlayMode ?? false
+                onCheckedChanged: Config.setNestedValue("settingsUi.overlayMode", checked)
+                StyledToolTip {
+                    text: Translation.tr("When enabled, Settings opens as a floating overlay inside the shell instead of a separate window. This lets you preview changes instantly.\nRequires a shell restart to take effect.")
+                }
+            }
+
+            // Visual hint showing current mode
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: modeHintRow.implicitHeight + 16
+                radius: Appearance.rounding.small
+                color: Appearance.colors.colSurfaceContainerLow
+                border.width: 1
+                border.color: Appearance.colors.colLayer0Border
+
+                RowLayout {
+                    id: modeHintRow
+                    anchors {
+                        fill: parent
+                        margins: 8
+                    }
+                    spacing: 8
+
+                    MaterialSymbol {
+                        text: (Config.options?.settingsUi?.overlayMode ?? false) ? "layers" : "open_in_new"
+                        iconSize: Appearance.font.pixelSize.huge
+                        color: Appearance.m3colors.m3primary
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        StyledText {
+                            text: (Config.options?.settingsUi?.overlayMode ?? false)
+                                ? Translation.tr("Overlay mode")
+                                : Translation.tr("Window mode")
+                            font {
+                                pixelSize: Appearance.font.pixelSize.small
+                                weight: Font.Medium
+                            }
+                            color: Appearance.colors.colOnSurface
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: (Config.options?.settingsUi?.overlayMode ?? false)
+                                ? Translation.tr("Settings will open as a floating panel over the shell. Press Esc or click outside to close.")
+                                : Translation.tr("Settings will open as a separate application window (current behavior).")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                            wrapMode: Text.WordWrap
+                        }
+                    }
                 }
             }
         }

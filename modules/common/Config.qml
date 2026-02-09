@@ -1037,6 +1037,10 @@ Singleton {
                 property bool centerTitle: true
             }
 
+            property JsonObject settingsUi: JsonObject {
+                property bool overlayMode: false // true = layer shell overlay (live preview), false = separate window (default)
+            }
+
             property JsonObject hacks: JsonObject {
                 property int arbitraryRaceConditionDelay: 20 // milliseconds
             }

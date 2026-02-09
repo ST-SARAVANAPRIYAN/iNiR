@@ -8,7 +8,6 @@ import qs.modules.common.functions
 
 ContentPage {
     id: root
-    forceWidth: true
     settingsPageIndex: 10
     settingsPageName: Translation.tr("Waffle Style")
 
