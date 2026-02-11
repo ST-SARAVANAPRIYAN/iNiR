@@ -266,6 +266,258 @@ Item {
                     Layout.fillWidth: true
                 }
 
+    Popup {
+        id: advancedOptionsPopup
+        anchors.centerIn: parent
+        width: 300
+        height: Math.min(400, advancedContent.implicitHeight + 40)
+        padding: 16
+        modal: true
+        dim: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
+                 : Appearance.auroraEverywhere ? Appearance.colors.colLayer1Base
+                 : Appearance.colors.colLayer1
+            radius: root.radiusNormal
+            border.width: root.borderWidth
+            border.color: root.colBorder
+        }
+
+        contentItem: ColumnLayout {
+            id: advancedContent
+            spacing: 12
+
+            RowLayout {
+                Layout.fillWidth: true
+                StyledText {
+                    text: Translation.tr("Connection Options")
+                    font.pixelSize: Appearance.font.pixelSize.normal
+                    font.weight: Font.Bold
+                    color: root.colText
+                }
+                Item { Layout.fillWidth: true }
+                RippleButton {
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    buttonRadius: 12
+                    colBackground: "transparent"
+                    colBackgroundHover: root.colLayer2Hover
+                    onClicked: advancedOptionsPopup.close()
+                    contentItem: MaterialSymbol { anchors.centerIn: parent; text: "close"; iconSize: 18; color: root.colTextSecondary }
+                }
+            }
+
+            // Connected account section
+            Rectangle {
+                Layout.fillWidth: true
+                visible: YtMusic.googleConnected
+                implicitHeight: connectedContent.implicitHeight + 16
+                radius: root.radiusSmall
+                color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.92)
+                border.width: root.borderWidth
+                border.color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.7)
+
+                ColumnLayout {
+                    id: connectedContent
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 8
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Rectangle {
+                            Layout.preferredWidth: 32
+                            Layout.preferredHeight: 32
+                            radius: 16
+                            color: ColorUtils.transparentize(root.colPrimary, 0.85)
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                source: YtMusic.userAvatar || ""
+                                visible: YtMusic.userAvatar !== ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                layer.enabled: true
+                                layer.effect: GE.OpacityMask {
+                                    maskSource: Rectangle { width: 30; height: 30; radius: 15 }
+                                }
+                            }
+
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                visible: !YtMusic.userAvatar
+                                text: "account_circle"
+                                iconSize: 20
+                                color: root.colPrimary
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+                            StyledText {
+                                text: YtMusic.userName || Translation.tr("Connected")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                font.weight: Font.Medium
+                                color: root.colText
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            StyledText {
+                                text: YtMusic.googleBrowser
+                                    ? Translation.tr("via %1").arg(YtMusic.getBrowserDisplayName(YtMusic.googleBrowser))
+                                    : Translation.tr("Connected")
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                color: root.colTextSecondary
+                            }
+                        }
+                    }
+
+                    RippleButton {
+                        Layout.fillWidth: true
+                        implicitHeight: 32
+                        buttonRadius: root.radiusSmall
+                        colBackground: ColorUtils.transparentize(Appearance.colors.colError, 0.9)
+                        colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colError, 0.8)
+                        onClicked: { YtMusic.disconnectGoogle(); advancedOptionsPopup.close() }
+                        contentItem: RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            MaterialSymbol { text: "logout"; iconSize: 16; color: Appearance.colors.colError }
+                            StyledText { text: Translation.tr("Disconnect"); color: Appearance.colors.colError; font.pixelSize: Appearance.font.pixelSize.smaller }
+                        }
+                    }
+                }
+            }
+
+            // Instructions (only when not connected)
+            Rectangle {
+                Layout.fillWidth: true
+                visible: !YtMusic.googleConnected
+                implicitHeight: infoColPopup.implicitHeight + 16
+                radius: root.radiusSmall
+                color: ColorUtils.transparentize(root.colPrimary, 0.95)
+                border.width: root.borderWidth
+                border.color: ColorUtils.transparentize(root.colPrimary, 0.8)
+
+                ColumnLayout {
+                    id: infoColPopup
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 6
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Translation.tr("Log in to YouTube Music in your browser, then select it below.")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: root.colText
+                        wrapMode: Text.WordWrap
+                    }
+
+                    RippleButton {
+                        implicitWidth: 150
+                        implicitHeight: 28
+                        buttonRadius: 14
+                        colBackground: root.colLayer2
+                        onClicked: YtMusic.openYtMusicInBrowser()
+                        contentItem: RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            MaterialSymbol { text: "open_in_new"; iconSize: 14; color: root.colPrimary }
+                            StyledText { text: Translation.tr("Open YouTube Music"); color: root.colPrimary; font.pixelSize: Appearance.font.pixelSize.smaller }
+                        }
+                    }
+                }
+            }
+
+            StyledText {
+                text: Translation.tr("Select Browser")
+                font.pixelSize: Appearance.font.pixelSize.small
+                font.weight: Font.DemiBold
+                color: root.colText
+            }
+
+            GridLayout {
+                Layout.fillWidth: true
+                columns: 2
+                rowSpacing: 6
+                columnSpacing: 6
+                visible: YtMusic.detectedBrowsers.length > 0
+
+                Repeater {
+                    model: YtMusic.detectedBrowsers
+                    delegate: RippleButton {
+                        required property string modelData
+                        readonly property bool isConnected: YtMusic.googleConnected && YtMusic.googleBrowser === modelData
+                        Layout.fillWidth: true
+                        implicitHeight: 36
+                        buttonRadius: root.radiusSmall
+                        colBackground: isConnected ? ColorUtils.transparentize(root.colPrimary, 0.85) : root.colLayer2
+                        colBackgroundHover: isConnected ? ColorUtils.transparentize(root.colPrimary, 0.75) : root.colSurfaceHover
+                        onClicked: { YtMusic.connectGoogle(modelData); advancedOptionsPopup.close() }
+                        contentItem: RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
+                            StyledText { text: YtMusic.browserInfo[modelData]?.icon ?? "🌐"; font.pixelSize: 14 }
+                            StyledText {
+                                text: YtMusic.browserInfo[modelData]?.name ?? modelData
+                                color: isConnected ? root.colPrimary : root.colText
+                                font.pixelSize: Appearance.font.pixelSize.smaller
+                                font.weight: isConnected ? Font.Medium : Font.Normal
+                                Layout.fillWidth: true
+                            }
+                            MaterialSymbol {
+                                visible: isConnected
+                                text: "check_circle"
+                                iconSize: 16
+                                color: root.colPrimary
+                            }
+                        }
+                    }
+                }
+            }
+
+            StyledText {
+                text: Translation.tr("Custom Cookies File")
+                font.pixelSize: Appearance.font.pixelSize.small
+                font.weight: Font.DemiBold
+                color: root.colText
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 36
+                radius: root.radiusSmall
+                color: root.colLayer2
+                border.width: root.borderWidth
+                border.color: cookiesFieldPopup.activeFocus ? root.colPrimary : root.colBorder
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 6
+                    MaterialSymbol { text: "description"; iconSize: 16; color: root.colTextSecondary }
+                    TextField {
+                        id: cookiesFieldPopup
+                        Layout.fillWidth: true
+                        placeholderText: "/path/to/cookies.txt"
+                        text: YtMusic.customCookiesPath
+                        color: root.colText
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        placeholderTextColor: root.colTextSecondary
+                        background: Item {}
+                        onAccepted: if (text) { YtMusic.setCustomCookiesPath(text); advancedOptionsPopup.close() }
+                    }
+                }
+            }
+        }
+    }
                 StackLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -1538,256 +1790,4 @@ Item {
     }
 
     // Advanced Options Popup
-    Popup {
-        id: advancedOptionsPopup
-        anchors.centerIn: parent
-        width: 300
-        height: Math.min(400, advancedContent.implicitHeight + 40)
-        padding: 16
-        modal: true
-        dim: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
-        background: Rectangle {
-            color: Appearance.inirEverywhere ? Appearance.inir.colLayer2
-                 : Appearance.auroraEverywhere ? Appearance.colors.colLayer1Base
-                 : Appearance.colors.colLayer1
-            radius: root.radiusNormal
-            border.width: root.borderWidth
-            border.color: root.colBorder
-        }
-
-        contentItem: ColumnLayout {
-            id: advancedContent
-            spacing: 12
-
-            RowLayout {
-                Layout.fillWidth: true
-                StyledText {
-                    text: Translation.tr("Connection Options")
-                    font.pixelSize: Appearance.font.pixelSize.normal
-                    font.weight: Font.Bold
-                    color: root.colText
-                }
-                Item { Layout.fillWidth: true }
-                RippleButton {
-                    implicitWidth: 24
-                    implicitHeight: 24
-                    buttonRadius: 12
-                    colBackground: "transparent"
-                    colBackgroundHover: root.colLayer2Hover
-                    onClicked: advancedOptionsPopup.close()
-                    contentItem: MaterialSymbol { anchors.centerIn: parent; text: "close"; iconSize: 18; color: root.colTextSecondary }
-                }
-            }
-
-            // Connected account section
-            Rectangle {
-                Layout.fillWidth: true
-                visible: YtMusic.googleConnected
-                implicitHeight: connectedContent.implicitHeight + 16
-                radius: root.radiusSmall
-                color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.92)
-                border.width: root.borderWidth
-                border.color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.7)
-
-                ColumnLayout {
-                    id: connectedContent
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 8
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        Rectangle {
-                            Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
-                            radius: 16
-                            color: ColorUtils.transparentize(root.colPrimary, 0.85)
-
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                source: YtMusic.userAvatar || ""
-                                visible: YtMusic.userAvatar !== ""
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                layer.enabled: true
-                                layer.effect: GE.OpacityMask {
-                                    maskSource: Rectangle { width: 30; height: 30; radius: 15 }
-                                }
-                            }
-
-                            MaterialSymbol {
-                                anchors.centerIn: parent
-                                visible: !YtMusic.userAvatar
-                                text: "account_circle"
-                                iconSize: 20
-                                color: root.colPrimary
-                            }
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 0
-                            StyledText {
-                                text: YtMusic.userName || Translation.tr("Connected")
-                                font.pixelSize: Appearance.font.pixelSize.small
-                                font.weight: Font.Medium
-                                color: root.colText
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
-                            }
-                            StyledText {
-                                text: YtMusic.googleBrowser
-                                    ? Translation.tr("via %1").arg(YtMusic.getBrowserDisplayName(YtMusic.googleBrowser))
-                                    : Translation.tr("Connected")
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: root.colTextSecondary
-                            }
-                        }
-                    }
-
-                    RippleButton {
-                        Layout.fillWidth: true
-                        implicitHeight: 32
-                        buttonRadius: root.radiusSmall
-                        colBackground: ColorUtils.transparentize(Appearance.colors.colError, 0.9)
-                        colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colError, 0.8)
-                        onClicked: { YtMusic.disconnectGoogle(); advancedOptionsPopup.close() }
-                        contentItem: RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-                            MaterialSymbol { text: "logout"; iconSize: 16; color: Appearance.colors.colError }
-                            StyledText { text: Translation.tr("Disconnect"); color: Appearance.colors.colError; font.pixelSize: Appearance.font.pixelSize.smaller }
-                        }
-                    }
-                }
-            }
-
-            // Instructions (only when not connected)
-            Rectangle {
-                Layout.fillWidth: true
-                visible: !YtMusic.googleConnected
-                implicitHeight: infoColPopup.implicitHeight + 16
-                radius: root.radiusSmall
-                color: ColorUtils.transparentize(root.colPrimary, 0.95)
-                border.width: root.borderWidth
-                border.color: ColorUtils.transparentize(root.colPrimary, 0.8)
-
-                ColumnLayout {
-                    id: infoColPopup
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 6
-
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: Translation.tr("Log in to YouTube Music in your browser, then select it below.")
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        color: root.colText
-                        wrapMode: Text.WordWrap
-                    }
-
-                    RippleButton {
-                        implicitWidth: 150
-                        implicitHeight: 28
-                        buttonRadius: 14
-                        colBackground: root.colLayer2
-                        onClicked: YtMusic.openYtMusicInBrowser()
-                        contentItem: RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-                            MaterialSymbol { text: "open_in_new"; iconSize: 14; color: root.colPrimary }
-                            StyledText { text: Translation.tr("Open YouTube Music"); color: root.colPrimary; font.pixelSize: Appearance.font.pixelSize.smaller }
-                        }
-                    }
-                }
-            }
-
-            StyledText {
-                text: Translation.tr("Select Browser")
-                font.pixelSize: Appearance.font.pixelSize.small
-                font.weight: Font.DemiBold
-                color: root.colText
-            }
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: 2
-                rowSpacing: 6
-                columnSpacing: 6
-                visible: YtMusic.detectedBrowsers.length > 0
-
-                Repeater {
-                    model: YtMusic.detectedBrowsers
-                    delegate: RippleButton {
-                        required property string modelData
-                        readonly property bool isConnected: YtMusic.googleConnected && YtMusic.googleBrowser === modelData
-                        Layout.fillWidth: true
-                        implicitHeight: 36
-                        buttonRadius: root.radiusSmall
-                        colBackground: isConnected ? ColorUtils.transparentize(root.colPrimary, 0.85) : root.colLayer2
-                        colBackgroundHover: isConnected ? ColorUtils.transparentize(root.colPrimary, 0.75) : root.colSurfaceHover
-                        onClicked: { YtMusic.connectGoogle(modelData); advancedOptionsPopup.close() }
-                        contentItem: RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 6
-                            StyledText { text: YtMusic.browserInfo[modelData]?.icon ?? "🌐"; font.pixelSize: 14 }
-                            StyledText {
-                                text: YtMusic.browserInfo[modelData]?.name ?? modelData
-                                color: isConnected ? root.colPrimary : root.colText
-                                font.pixelSize: Appearance.font.pixelSize.smaller
-                                font.weight: isConnected ? Font.Medium : Font.Normal
-                                Layout.fillWidth: true
-                            }
-                            MaterialSymbol {
-                                visible: isConnected
-                                text: "check_circle"
-                                iconSize: 16
-                                color: root.colPrimary
-                            }
-                        }
-                    }
-                }
-            }
-
-            StyledText {
-                text: Translation.tr("Custom Cookies File")
-                font.pixelSize: Appearance.font.pixelSize.small
-                font.weight: Font.DemiBold
-                color: root.colText
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 36
-                radius: root.radiusSmall
-                color: root.colLayer2
-                border.width: root.borderWidth
-                border.color: cookiesFieldPopup.activeFocus ? root.colPrimary : root.colBorder
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 6
-                    MaterialSymbol { text: "description"; iconSize: 16; color: root.colTextSecondary }
-                    TextField {
-                        id: cookiesFieldPopup
-                        Layout.fillWidth: true
-                        placeholderText: "/path/to/cookies.txt"
-                        text: YtMusic.customCookiesPath
-                        color: root.colText
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        placeholderTextColor: root.colTextSecondary
-                        background: Item {}
-                        onAccepted: if (text) { YtMusic.setCustomCookiesPath(text); advancedOptionsPopup.close() }
-                    }
-                }
-            }
-        }
-    }
 }

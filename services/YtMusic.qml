@@ -896,7 +896,7 @@ Singleton {
         if (savedBrowser) {
             root.googleBrowser = savedBrowser
         }
-        Qt.callLater(_checkGoogleConnection)
+        // Don't check connection here - wait for _checkAvailability to complete
     }
 
     Process {
@@ -1008,6 +1008,12 @@ Singleton {
         command: ["/bin/bash", "-c", "command -v yt-dlp >/dev/null && command -v mpv >/dev/null && command -v socat >/dev/null"]
         onExited: (code) => {
             root.available = (code === 0)
+            console.log("[YtMusic] Dependencies check:", root.available ? "OK" : "FAILED")
+            // Only check connection after verifying dependencies are available
+            if (root.available) {
+                console.log("[YtMusic] Checking Google connection...")
+                Qt.callLater(_checkGoogleConnection)
+            }
         }
     }
 
@@ -1033,18 +1039,25 @@ Singleton {
                 _googleCheckProc.errorOutput += line + "\n"
             }
         }
-        onStarted: { errorOutput = ""; stdOutput = "" }
+        onStarted: { 
+            errorOutput = ""; 
+            stdOutput = "";
+            console.log("[YtMusic] Starting connection check with browser:", root.googleBrowser)
+        }
         onExited: (code) => {
+            console.log("[YtMusic] Connection check exited. Code:", code, "Connected:", (code === 0 && stdOutput.trim().length > 0))
             root.googleChecking = false
             if (code === 0 && stdOutput.trim().length > 0) {
                 root.googleConnected = true
                 root.googleError = ""
+                console.log("[YtMusic] Successfully connected!")
                 if (!root.customCookiesPath) {
                     _exportCookiesProc.running = true
                 }
             } else {
                 root.googleConnected = false
                 const err = errorOutput.toLowerCase()
+                console.log("[YtMusic] Connection failed. Error output:", errorOutput.substring(0, 200))
                 if (err.includes("playlist does not exist") || err.includes("sign in") || err.includes("403")) {
                     root.googleError = Translation.tr("Not logged in. Sign in to music.youtube.com in %1, then try again.").arg(root.getBrowserDisplayName(root.googleBrowser))
                 } else if (err.includes("cookies") || err.includes("browser") || err.includes("keyring")) {
