@@ -528,7 +528,7 @@ ContentPage {
                     { displayName: Translation.tr("None (no UI)"), icon: "visibility_off", value: "none" }
                 ]
                 currentValue: Config.options?.waffles?.altSwitcher?.preset ?? "thumbnails"
-                onSelected: (newValue) => Config.options.waffles.altSwitcher.preset = newValue
+                onSelected: (newValue) => Config.setNestedValue("waffles.altSwitcher.preset", newValue)
             }
 
             SettingsSwitch {
@@ -543,7 +543,7 @@ ContentPage {
                 buttonIcon: "timer"
                 text: Translation.tr("Auto-hide after delay")
                 checked: Config.options?.waffles?.altSwitcher?.autoHide ?? true
-                onCheckedChanged: Config.options.waffles.altSwitcher.autoHide = checked
+                onCheckedChanged: Config.setNestedValue("waffles.altSwitcher.autoHide", checked)
             }
 
             ConfigSpinBox {
@@ -552,21 +552,21 @@ ContentPage {
                 text: Translation.tr("Auto-hide delay (ms)")
                 from: 100; to: 5000; stepSize: 100
                 value: Config.options?.waffles?.altSwitcher?.autoHideDelayMs ?? 500
-                onValueChanged: Config.options.waffles.altSwitcher.autoHideDelayMs = value
+                onValueChanged: Config.setNestedValue("waffles.altSwitcher.autoHideDelayMs", value)
             }
 
             SettingsSwitch {
                 buttonIcon: "close"
                 text: Translation.tr("Close on window focus")
                 checked: Config.options?.waffles?.altSwitcher?.closeOnFocus ?? true
-                onCheckedChanged: Config.options.waffles.altSwitcher.closeOnFocus = checked
+                onCheckedChanged: Config.setNestedValue("waffles.altSwitcher.closeOnFocus", checked)
             }
 
             SettingsSwitch {
                 buttonIcon: "history"
                 text: Translation.tr("Most recent first")
                 checked: Config.options?.waffles?.altSwitcher?.useMostRecentFirst ?? true
-                onCheckedChanged: Config.options.waffles.altSwitcher.useMostRecentFirst = checked
+                onCheckedChanged: Config.setNestedValue("waffles.altSwitcher.useMostRecentFirst", checked)
             }
 
             ConfigSpinBox {
@@ -575,7 +575,7 @@ ContentPage {
                 text: Translation.tr("Thumbnail width")
                 from: 150; to: 500; stepSize: 20
                 value: Config.options?.waffles?.altSwitcher?.thumbnailWidth ?? 280
-                onValueChanged: Config.options.waffles.altSwitcher.thumbnailWidth = value
+                onValueChanged: Config.setNestedValue("waffles.altSwitcher.thumbnailWidth", value)
             }
 
             ConfigSpinBox {
@@ -584,7 +584,7 @@ ContentPage {
                 text: Translation.tr("Thumbnail height")
                 from: 100; to: 400; stepSize: 20
                 value: Config.options?.waffles?.altSwitcher?.thumbnailHeight ?? 180
-                onValueChanged: Config.options.waffles.altSwitcher.thumbnailHeight = value
+                onValueChanged: Config.setNestedValue("waffles.altSwitcher.thumbnailHeight", value)
             }
 
             // List width option disabled - WPane doesn't support dynamic width properly
@@ -602,14 +602,14 @@ ContentPage {
                 text: Translation.tr("Scrim opacity")
                 from: 0; to: 100; stepSize: 5
                 value: Math.round((Config.options?.waffles?.altSwitcher?.scrimOpacity ?? 0.4) * 100)
-                onValueChanged: Config.options.waffles.altSwitcher.scrimOpacity = value / 100.0
+                onValueChanged: Config.setNestedValue("waffles.altSwitcher.scrimOpacity", value / 100.0)
             }
 
             SettingsSwitch {
                 buttonIcon: "grid_view"
                 text: Translation.tr("Show Niri overview while switching")
                 checked: Config.options?.waffles?.altSwitcher?.showOverviewWhileSwitching ?? false
-                onCheckedChanged: Config.options.waffles.altSwitcher.showOverviewWhileSwitching = checked
+                onCheckedChanged: Config.setNestedValue("waffles.altSwitcher.showOverviewWhileSwitching", checked)
                 StyledToolTip { text: Translation.tr("Opens Niri's native overview alongside the switcher for window previews") }
             }
         }

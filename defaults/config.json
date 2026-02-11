@@ -768,6 +768,7 @@
       "autoHide": true,
       "autoHideDelayMs": 500,
       "closeOnFocus": true,
+      "noVisualUi": false,
       "quickSwitch": false,
       "useMostRecentFirst": true,
       "thumbnailWidth": 280,
@@ -870,9 +871,10 @@
       "showQuickActions": true,
       "weatherHideLocation": false
     },
-    "taskView": {
-      "mode": "centered"
-    }
+      "taskView": {
+        "mode": "centered",
+        "closeOnSelect": false
+      }
   },
   "familyTransitionAnimation": true,
   "panelFamily": "ii",

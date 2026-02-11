@@ -404,6 +404,23 @@ Scope {
         pendingSpotlightOptionId = -1;
     }
 
+    // Reset page when panel family changes to avoid showing stale page from other family
+    property string _lastFamily: Config.options?.panelFamily ?? "ii"
+    onSettingsOpenChanged: {
+        var currentFamily = Config.options?.panelFamily ?? "ii";
+        if (currentFamily !== _lastFamily) {
+            _lastFamily = currentFamily;
+            overlayCurrentPage = 0;
+        }
+    }
+    Connections {
+        target: Config.options ?? null
+        function onPanelFamilyChanged() {
+            root._lastFamily = Config.options?.panelFamily ?? "ii";
+            root.overlayCurrentPage = 0;
+        }
+    }
+
     Connections {
         target: GlobalStates
         function onSettingsOverlayOpenChanged() {

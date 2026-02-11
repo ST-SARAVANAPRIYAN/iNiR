@@ -45,7 +45,7 @@ ContentPage {
         readonly property color noteColor: {
             if (warning) {
                 return Appearance.inirEverywhere ? Appearance.inir.colWarning
-                     : Appearance.colors.colYellow
+                     : Appearance.colors.colTertiary
             }
             return Appearance.inirEverywhere ? Appearance.inir.colTextSecondary
                  : Appearance.colors.colSubtext
