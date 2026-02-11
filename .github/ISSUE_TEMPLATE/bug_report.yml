@@ -1,0 +1,91 @@
+name: Bug Report
+description: Something's broken and needs fixing
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a bug report, check if someone already reported it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What's broken?
+      description: Clear description of what's not working
+      placeholder: The bar crashes when I enable the weather widget
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen instead?
+      description: What you expected to happen
+      placeholder: The weather widget should display without crashing
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Steps to trigger the bug
+      placeholder: |
+        1. Enable weather widget in settings
+        2. Restart shell
+        3. Bar crashes on startup
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output from `qs log -c ii` (last 50 lines or relevant errors)
+      placeholder: Paste logs here
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: iNiR version
+      description: Check VERSION file or `cat ~/.config/quickshell/ii/VERSION`
+      placeholder: "2.9.0"
+    validations:
+      required: true
+
+  - type: input
+    id: compositor
+    attributes:
+      label: Compositor
+      description: Niri or Hyprland (include version)
+      placeholder: "Niri 0.1.9"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: panel-family
+    attributes:
+      label: Panel family
+      description: Which UI family are you using?
+      options:
+        - ii (Material Design)
+        - waffle (Windows 11 style)
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config
+      description: If the bug is config-related, paste the relevant section from `~/.config/illogical-impulse/config.json`
+      placeholder: Paste config here
+      render: json
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might be relevant (screenshots, system info, etc.)

@@ -1,0 +1,64 @@
+name: Question / Help
+description: Need help with setup, configuration, or usage
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before asking, check the documentation and existing issues.
+
+        - [Installation Guide](https://github.com/snowarch/iNiR/blob/main/docs/INSTALL.md)
+        - [Configuration Guide](https://github.com/snowarch/iNiR/blob/main/docs/CONFIGURATION.md)
+        - [Keybindings](https://github.com/snowarch/iNiR/blob/main/docs/KEYBINDS.md)
+        - [IPC Commands](https://github.com/snowarch/iNiR/blob/main/docs/IPC.md)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: Clear description of what you're trying to do or understand
+      placeholder: How do I configure the bar to show on multiple monitors?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Steps you've already taken to solve this
+      placeholder: |
+        - Checked the config.json for monitor-related options
+        - Searched issues for "multi-monitor"
+        - Tried setting bar.position to "top" on both monitors
+
+  - type: input
+    id: version
+    attributes:
+      label: iNiR version
+      description: Check VERSION file or `cat ~/.config/quickshell/ii/VERSION`
+      placeholder: "2.9.0"
+    validations:
+      required: true
+
+  - type: input
+    id: compositor
+    attributes:
+      label: Compositor
+      description: Niri or Hyprland (include version)
+      placeholder: "Niri 0.1.9"
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config
+      description: If config-related, paste the relevant section from `~/.config/illogical-impulse/config.json`
+      placeholder: Paste config here
+      render: json
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, logs, or anything else that might help

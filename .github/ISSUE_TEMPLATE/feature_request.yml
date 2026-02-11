@@ -1,0 +1,67 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before requesting a feature, check if someone already suggested it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Clear explanation of the problem or limitation you're facing
+      placeholder: I can't configure the bar to auto-hide on specific workspaces
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How you think this should work
+      placeholder: Add a config option like `bar.autoHide.workspaces` that accepts an array of workspace IDs
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you've thought about
+      placeholder: Using Niri's window rules, but that affects all bars globally
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: What part of iNiR does this affect?
+      options:
+        - Bar
+        - Dock
+        - Sidebar
+        - Settings
+        - Waffle family
+        - Background/Wallpaper
+        - Notifications
+        - Overview
+        - Services
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to help implement this?
+      options:
+        - label: I can submit a PR for this feature
+        - label: I can help test this feature
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Mockups, examples from other projects, or anything else relevant
