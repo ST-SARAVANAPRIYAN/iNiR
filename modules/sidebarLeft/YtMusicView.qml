@@ -824,22 +824,7 @@ Item {
                     StyledToolTip { text: Translation.tr("Sync library") }
                 }
 
-                // Settings/disconnect
-                RippleButton {
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    buttonRadius: 14
-                    colBackground: "transparent"
-                    colBackgroundHover: root.colLayer2Hover
-                    onClicked: advancedOptionsPopup.open()
-                    contentItem: MaterialSymbol {
-                        anchors.centerIn: parent
-                        text: "settings"
-                        iconSize: 18
-                        color: root.colTextSecondary
-                    }
-                    StyledToolTip { text: Translation.tr("Account settings") }
-                }
+
             }
         }
 
@@ -868,6 +853,24 @@ Item {
             }
             
             Item { Layout.fillWidth: true }
+            
+            // Settings/connection options - always accessible
+            RippleButton {
+                visible: expandedPlaylist < 0 && !showLiked
+                implicitWidth: 32
+                implicitHeight: 32
+                buttonRadius: 16
+                colBackground: "transparent"
+                colBackgroundHover: root.colLayer2Hover
+                onClicked: advancedOptionsPopup.open()
+                contentItem: MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "settings"
+                    iconSize: 20
+                    color: root.colTextSecondary
+                }
+                StyledToolTip { text: Translation.tr("Connection settings") }
+            }
             
             RippleButton {
                 visible: (expandedPlaylist >= 0 && (YtMusic.playlists[expandedPlaylist]?.items?.length ?? 0) > 0) || (showLiked && YtMusic.likedSongs.length > 0)
