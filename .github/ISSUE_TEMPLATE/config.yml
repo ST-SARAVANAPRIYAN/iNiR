@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Discord Community
+  - name: Discord
     url: https://discord.gg/pAPTfAhZUJ
-    about: Chat with the community, get help, or discuss features
+    about: Chat with the community or get help
   - name: Documentation
     url: https://github.com/snowarch/iNiR/tree/main/docs
-    about: Installation, configuration, keybindings, and IPC reference
+    about: Installation, configuration, and reference guides
