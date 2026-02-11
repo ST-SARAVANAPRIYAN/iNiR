@@ -182,7 +182,7 @@ ContentPage {
                 text: Translation.tr("Enable animated wallpapers (videos/GIFs)")
                 checked: Config.options?.waffles?.background?.backdrop?.enableAnimation ?? false
                 onCheckedChanged: {
-                    Config.options.waffles.background.backdrop.enableAnimation = checked;
+                    Config.setNestedValue("waffles.background.backdrop.enableAnimation", checked);
                 }
                 StyledToolTip {
                     text: Translation.tr("Play videos and GIFs in backdrop (may impact performance)")

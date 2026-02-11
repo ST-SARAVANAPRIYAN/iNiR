@@ -1060,6 +1060,10 @@ Singleton {
                 property int adviseUpdateThreshold: 75
                 property int stronglyAdviseUpdateThreshold: 200
             }
+            property JsonObject shellUpdates: JsonObject {
+                property bool enabled: true
+                property int checkIntervalMinutes: 360
+            }
             property JsonObject welcomeWizard: JsonObject {
                 property bool completed: false
                 property bool skipped: false
