@@ -227,6 +227,7 @@ Singleton {
                     property bool enableQtApps: true
                     property bool enableTerminal: true
                     property bool enableVesktop: true
+                    property bool useBackdropForColors: false
                     property JsonObject terminals: JsonObject {
                         property bool kitty: true
                         property bool alacritty: true
@@ -434,6 +435,10 @@ Singleton {
                     property bool enableSidebar: true
                     property real widgetsFactor: 1.2
                 }
+                property JsonObject multiMonitor: JsonObject {
+                    property bool enable: false
+                }
+                property list<var> wallpapersByMonitor: []
             }
 
             property JsonObject bar: JsonObject {
@@ -1036,6 +1041,7 @@ Singleton {
             property JsonObject wallpaperSelector: JsonObject {
                 property bool useSystemFileDialog: false
                 property string selectionTarget: "main"
+                property string targetMonitor: ""
             }
 
             property JsonObject screenRecord: JsonObject {

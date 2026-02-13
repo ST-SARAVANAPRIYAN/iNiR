@@ -51,6 +51,24 @@ PopupWindow {
     implicitWidth: contentItem.implicitWidth + ambientShadowWidth + (visualMargin * 2)
     implicitHeight: contentItem.implicitHeight + ambientShadowWidth + (visualMargin * 2)
 
+    // Reactively update preview when toplevels change (e.g. window closed)
+    Connections {
+        target: ToplevelManager.toplevels
+        function onValuesChanged() {
+            if (!root.visible || !root.appEntry) return
+            const appId = root.appEntry.appId
+            if (!appId) return
+            const current = ToplevelManager.toplevels.values.filter(
+                t => t.appId && t.appId.toLowerCase() === appId
+            )
+            if (current.length === 0) {
+                root.close()
+            } else {
+                root.appEntry = Object.assign({}, root.appEntry, { toplevels: current })
+            }
+        }
+    }
+
     anchor {
         adjustment: PopupAdjustment.Slide
         item: root.anchorItem

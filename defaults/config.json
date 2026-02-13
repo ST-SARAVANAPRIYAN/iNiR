@@ -49,6 +49,7 @@
       "enableAppsAndShell": true,
       "enableQtApps": true,
       "enableTerminal": true,
+      "useBackdropForColors": false,
       "terminalGenerationProps": {
         "forceDarkMode": false,
         "harmonizeThreshold": 100,
@@ -172,7 +173,11 @@
         "x": 100,
         "y": 200
       }
-    }
+    },
+    "multiMonitor": {
+      "enable": false
+    },
+    "wallpapersByMonitor": []
   },
   "bar": {
     "autoHide": {
@@ -608,7 +613,7 @@
       ],
       "spacing": 8,
       "crypto_settings": {
-        "refreshInterval": 60,
+        "refreshInterval": 300,
         "coins": ["bitcoin", "ethereum"]
       },
       "glance": {
@@ -677,6 +682,7 @@
   },
   "wallpaperSelector": {
     "selectionTarget": "main",
+    "targetMonitor": "",
     "useSystemFileDialog": false
   },
   "screenRecord": {
