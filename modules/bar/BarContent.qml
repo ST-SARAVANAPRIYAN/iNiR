@@ -24,7 +24,13 @@ Item { // Bar content region
     readonly property bool cardStyleEverywhere: (Config.options?.dock?.cardStyle ?? false) && (Config.options?.sidebar?.cardStyle ?? false) && (Config.options?.bar?.cornerStyle === 3)
     readonly property color separatorColor: Appearance.colors.colOutlineVariant
 
-    readonly property string wallpaperUrl: Wallpapers.effectiveWallpaperUrl
+    // Per-monitor wallpaper URL for Aurora blur — uses the actual wallpaper on this screen
+    readonly property string wallpaperUrl: {
+        const _dep1 = WallpaperListener.multiMonitorEnabled
+        const _dep2 = WallpaperListener.effectivePerMonitor
+        const _dep3 = Wallpapers.effectiveWallpaperUrl
+        return WallpaperListener.wallpaperUrlForScreen(root.screen)
+    }
 
     ColorQuantizer {
         id: wallpaperColorQuantizer

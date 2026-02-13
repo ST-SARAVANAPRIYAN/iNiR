@@ -28,6 +28,7 @@ Item {
     property string settingsQmlPath: Quickshell.shellPath("settings.qml")
     property int screenWidth: 1920
     property int screenHeight: 1080
+    property var panelScreen: null
     property bool showAudioOutputDialog: false
     property bool showAudioInputDialog: false
     property bool showBluetoothDialog: false
@@ -75,7 +76,12 @@ Item {
         readonly property bool auroraEverywhere: Appearance.auroraEverywhere
         readonly property bool inirEverywhere: Appearance.inirEverywhere
         readonly property bool gameModeMinimal: Appearance.gameModeMinimal
-        readonly property string wallpaperUrl: Wallpapers.effectiveWallpaperUrl
+        readonly property string wallpaperUrl: {
+            const _dep1 = WallpaperListener.multiMonitorEnabled
+            const _dep2 = WallpaperListener.effectivePerMonitor
+            const _dep3 = Wallpapers.effectiveWallpaperUrl
+            return WallpaperListener.wallpaperUrlForScreen(root.panelScreen)
+        }
 
         ColorQuantizer {
             id: sidebarRightWallpaperQuantizer

@@ -153,7 +153,12 @@ Scope {
                                 readonly property bool auroraEverywhere: Appearance.auroraEverywhere
                                 readonly property bool inirEverywhere: Appearance.inirEverywhere
                                 readonly property bool gameModeMinimal: Appearance.gameModeMinimal
-                                readonly property string wallpaperUrl: Wallpapers.effectiveWallpaperUrl
+                                readonly property string wallpaperUrl: {
+                                    const _dep1 = WallpaperListener.multiMonitorEnabled
+                                    const _dep2 = WallpaperListener.effectivePerMonitor
+                                    const _dep3 = Wallpapers.effectiveWallpaperUrl
+                                    return WallpaperListener.wallpaperUrlForScreen(dockRoot.screen)
+                                }
 
                                 ColorQuantizer {
                                     id: dockWallpaperQuantizer
