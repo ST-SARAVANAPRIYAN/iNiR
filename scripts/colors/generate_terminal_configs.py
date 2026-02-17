@@ -385,6 +385,15 @@ urls={colors.get("term4", "#458588")[1:]}
     else:
         print(f"✓ Generated Foot config (already integrated)")
 
+    # Remove stale colors.ini include (legacy from old matugen terminal template,
+    # no longer updated — was overriding inir-colors.ini with stale colors)
+    foot_path = Path(foot_conf)
+    if foot_path.exists():
+        old_content = foot_path.read_text()
+        new_content = re.sub(r"^include\s*=\s*~/.config/foot/colors\.ini\s*\n?", "", old_content, flags=re.MULTILINE)
+        if new_content != old_content:
+            foot_path.write_text(new_content)
+
 
 def generate_wezterm_config(colors, output_path):
     """Generate WezTerm terminal color config and auto-integrate"""
