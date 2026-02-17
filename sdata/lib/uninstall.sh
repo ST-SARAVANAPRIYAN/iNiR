@@ -276,7 +276,7 @@ uninstall_stop_services() {
 uninstall_create_backup() {
     local backup_dir="${HOME}/.local/share/inir-uninstall-backup-$(date +%Y%m%d-%H%M%S)"
 
-    tui_info "Creating backup before uninstall..."
+    tui_info "Creating backup before uninstall..." >&2
     mkdir -p "$backup_dir"
 
     # Backup iNiR-specific files
@@ -298,7 +298,7 @@ uninstall_create_backup() {
         cp -r "${XDG_STATE_HOME}/quickshell/user" "$backup_dir/quickshell-state"
     fi
 
-    tui_success "Backup created: $backup_dir"
+    tui_success "Backup created: $backup_dir" >&2
     echo "$backup_dir"
 }
 
