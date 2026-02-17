@@ -34,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **QuickConfig "Use current folder"**: Safe config access with optional chaining
 - **Fresh install defaults**: pinnedApps, polkit, GTK-first defaults for non-KDE users
 - **Install deps**: dolphin→nautilus, added missing dependencies
+- **Setup install: 0-byte wallpaper recovery**: Overwrite empty/corrupt wallpapers from failed installs (`-s` check) — fixes matugen crash on re-install
+- **Setup install: version.json created on install**: ShellUpdates service now works from first boot (repo path, version, commit tracked)
+- **Setup install: polkit agent auto-detection**: Detects KDE→GNOME→MATE→LX→LXQt polkit agent instead of hardcoding mate
+- **Setup install: Qt theme detection**: `QT_QPA_PLATFORMTHEME` set to `kde` or `qt6ct` based on Plasma presence
+- **Setup install: shell env vars**: `ILLOGICAL_IMPULSE_VIRTUAL_ENV` written to bash/fish/zsh profiles (not just niri config.kdl)
+- **Setup install: conflict auto-disable**: Dunst and other conflicting services auto-disabled in non-interactive mode
+- **Setup install: dynamic wallpaper selection**: Default wallpaper picks first available file instead of hardcoding a filename
+- **Sound effects enabled by default**: New installs start with notification sounds on (user can disable in welcome wizard or settings)
 
 ## [2.10.1] - 2026-02-13
 
