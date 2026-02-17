@@ -646,8 +646,28 @@ fi
 #####################################################################################
 # Set default wallpaper and generate initial theme (first run only)
 #####################################################################################
-DEFAULT_WALLPAPER="${USER_WALLPAPERS_DIR}/G5uBmitWkAAyk8s.jpg"
-if [[ "${INSTALL_FIRSTRUN}" == true && -f "${DEFAULT_WALLPAPER}" ]]; then
+# Pick the first available wallpaper (don't hardcode a filename that may not exist)
+DEFAULT_WALLPAPER=""
+for candidate in \
+  "${USER_WALLPAPERS_DIR}/G5uBmitWkAAyk8s.jpg" \
+  "${USER_WALLPAPERS_DIR}/Angel1.png" \
+  "${USER_WALLPAPERS_DIR}/qs-niri.jpg"
+do
+  if [[ -f "$candidate" && -s "$candidate" ]]; then
+    DEFAULT_WALLPAPER="$candidate"
+    break
+  fi
+done
+# Fallback: pick any wallpaper in the directory
+if [[ -z "$DEFAULT_WALLPAPER" ]]; then
+  for f in "${USER_WALLPAPERS_DIR}"/*.{jpg,jpeg,png,webp}; do
+    if [[ -f "$f" && -s "$f" ]]; then
+      DEFAULT_WALLPAPER="$f"
+      break
+    fi
+  done
+fi
+if [[ "${INSTALL_FIRSTRUN}" == true && -n "${DEFAULT_WALLPAPER}" && -f "${DEFAULT_WALLPAPER}" ]]; then
   if ! ${quiet:-false}; then
     echo -e "${STY_CYAN}Setting default wallpaper...${STY_RST}"
   fi
