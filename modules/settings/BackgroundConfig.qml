@@ -144,11 +144,14 @@ ContentPage {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 180
                     radius: Appearance.rounding.normal
-                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer0
+                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                         : Appearance.inirEverywhere ? Appearance.inir.colLayer0
                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                          : Appearance.colors.colLayer0
-                    border.width: Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
-                    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                    border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                        : Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
+                    border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                               : Appearance.inirEverywhere ? Appearance.inir.colBorder
                                : Appearance.colors.colLayer0Border
 
                     RowLayout {
@@ -198,14 +201,15 @@ ContentPage {
                                     width: bgMonDelegate.cardWidth
                                     height: bgMonDelegate.cardHeight
                                     radius: Appearance.rounding.small
-                                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                          : Appearance.colors.colLayer1
                                     border.width: bgMonDelegate.isSelected && bgMultiMonPanel.showBackdropView
-                                        ? (Appearance.inirEverywhere ? 1 : 2) : (Appearance.inirEverywhere ? 1 : 0)
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 2) : (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 0)
                                     border.color: bgMonDelegate.isSelected && bgMultiMonPanel.showBackdropView
-                                        ? (Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
-                                        : (Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
+                                        : (Appearance.angelEverywhere ? Appearance.angel.colCardBorder : Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
                                     clip: true
 
                                     layer.enabled: true
@@ -324,14 +328,15 @@ ContentPage {
                                     width: bgMonDelegate.cardWidth
                                     height: bgMonDelegate.cardHeight
                                     radius: Appearance.rounding.small
-                                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                          : Appearance.colors.colLayer1
                                     border.width: bgMonDelegate.isSelected && !bgMultiMonPanel.showBackdropView
-                                        ? (Appearance.inirEverywhere ? 1 : 2) : (Appearance.inirEverywhere ? 1 : 0)
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 2) : (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 0)
                                     border.color: bgMonDelegate.isSelected && !bgMultiMonPanel.showBackdropView
-                                        ? (Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
-                                        : (Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
+                                        : (Appearance.angelEverywhere ? Appearance.angel.colCardBorder : Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
                                     clip: true
 
                                     layer.enabled: true
@@ -523,11 +528,13 @@ ContentPage {
                     Layout.fillWidth: true
                     implicitHeight: bgMonPreviewCol.implicitHeight
                     radius: Appearance.rounding.small
-                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                          : Appearance.colors.colLayer1
-                    border.width: 1
-                    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                    border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : 1
+                    border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                               : Appearance.inirEverywhere ? Appearance.inir.colBorder
                                : Appearance.colors.colLayer1Border
                     clip: true
 

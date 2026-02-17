@@ -496,6 +496,11 @@ Scope {
                 }
             }
 
+            // ── Escalonado shadow for angel ──
+            StyledRectangularShadow {
+                target: settingsCard
+            }
+
             // ── Floating settings card ──
             Rectangle {
                 id: settingsCard
@@ -506,16 +511,20 @@ Scope {
                 anchors.centerIn: parent
                 width: maxCardWidth
                 height: maxCardHeight
-                radius: Appearance.rounding.windowRounding
-                color: Appearance.inirEverywhere ? Appearance.inir.colLayer0
-                     : Appearance.auroraEverywhere ? Appearance.colors.colLayer0Base
+                radius: Appearance.angelEverywhere ? Appearance.angel.roundingLarge
+                      : Appearance.inirEverywhere ? Appearance.inir.roundingLarge
+                      : Appearance.rounding.windowRounding
+                color: Appearance.auroraEverywhere ? "transparent"
+                     : Appearance.inirEverywhere ? Appearance.inir.colLayer0
                      : Appearance.m3colors.m3background
                 clip: true
 
-                border.width: Appearance.inirEverywhere ? 1 : 0
-                border.color: Appearance.inirEverywhere
-                    ? (Appearance.inir?.colBorder ?? Appearance.colors.colLayer0Border)
-                    : "transparent"
+                border.width: Appearance.angelEverywhere ? Appearance.angel.panelBorderWidth
+                            : Appearance.inirEverywhere ? 1 : 0
+                border.color: Appearance.angelEverywhere ? Appearance.angel.colPanelBorder
+                            : Appearance.inirEverywhere
+                                ? (Appearance.inir?.colBorder ?? Appearance.colors.colLayer0Border)
+                                : "transparent"
 
                 // Scale + fade animation
                 opacity: (GlobalStates.settingsOverlayOpen ?? false) ? 1 : 0
@@ -530,7 +539,7 @@ Scope {
                     animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
                 }
 
-                // Shadow - hidden in aurora, visible in material/inir
+                // Shadow - hidden in aurora/angel (angel uses StyledRectangularShadow)
                 layer.enabled: Appearance.effectsEnabled && !Appearance.auroraEverywhere
                 layer.effect: DropShadow {
                     color: Appearance.colors.colShadow
@@ -538,6 +547,22 @@ Scope {
                     samples: 25
                     verticalOffset: 8
                     horizontalOffset: 0
+                }
+
+                // Glass background for aurora/angel wallpaper blur
+                GlassBackground {
+                    anchors.fill: parent
+                    z: -1
+                    visible: Appearance.auroraEverywhere && !Appearance.inirEverywhere
+                    screenX: settingsCard.x
+                    screenY: settingsCard.y
+                    screenWidth: settingsPanel.width
+                    screenHeight: settingsPanel.height
+                    fallbackColor: "transparent"
+                    auroraTransparency: Appearance.angelEverywhere
+                        ? Appearance.angel.panelTransparentize
+                        : Appearance.aurora.overlayTransparentize
+                    radius: parent.radius
                 }
 
                 // Prevent clicks from closing
@@ -589,14 +614,18 @@ Scope {
                             Layout.preferredHeight: 40
                             radius: Appearance.rounding.full
                             color: overlaySearchField.activeFocus
-                                ? Appearance.colors.colLayer1
-                                : (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
+                                ? (Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                  : Appearance.colors.colLayer1)
+                                : (Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                  : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                   : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                   : Appearance.m3colors.m3surfaceContainerLow)
-                            border.width: overlaySearchField.activeFocus ? 2 : 1
+                            border.width: overlaySearchField.activeFocus ? 2
+                                : (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : 1)
                             border.color: overlaySearchField.activeFocus
                                 ? Appearance.colors.colPrimary
-                                : (Appearance.inirEverywhere ? Appearance.inir.colBorderMuted
+                                : (Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                                  : Appearance.inirEverywhere ? Appearance.inir.colBorderMuted
                                   : Appearance.m3colors.m3outlineVariant)
 
                             Behavior on color {
@@ -810,21 +839,27 @@ Scope {
 
                                             toggled: overlayCurrentPage === index
                                             colBackground: "transparent"
-                                            colBackgroundToggled: Appearance.inirEverywhere
-                                                ? Appearance.inir.colLayer2
-                                                : Appearance.auroraEverywhere
-                                                    ? Appearance.aurora.colElevatedSurface
-                                                    : Appearance.colors.colLayer1
-                                            colBackgroundToggledHover: Appearance.inirEverywhere
-                                                ? Appearance.inir.colLayer1Hover
-                                                : Appearance.auroraEverywhere
-                                                    ? Appearance.aurora.colElevatedSurface
-                                                    : Appearance.colors.colLayer1Hover
-                                            colBackgroundHover: Appearance.inirEverywhere
-                                                ? Appearance.inir.colLayer1Hover
-                                                : Appearance.auroraEverywhere
-                                                    ? Appearance.aurora.colSubSurface
-                                                    : CF.ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 0.5)
+                                            colBackgroundToggled: Appearance.angelEverywhere
+                                                ? Appearance.angel.colGlassCard
+                                                : Appearance.inirEverywhere
+                                                    ? Appearance.inir.colLayer2
+                                                    : Appearance.auroraEverywhere
+                                                        ? Appearance.aurora.colElevatedSurface
+                                                        : Appearance.colors.colLayer1
+                                            colBackgroundToggledHover: Appearance.angelEverywhere
+                                                ? Appearance.angel.colGlassCardHover
+                                                : Appearance.inirEverywhere
+                                                    ? Appearance.inir.colLayer1Hover
+                                                    : Appearance.auroraEverywhere
+                                                        ? Appearance.aurora.colElevatedSurface
+                                                        : Appearance.colors.colLayer1Hover
+                                            colBackgroundHover: Appearance.angelEverywhere
+                                                ? Appearance.angel.colGlassCard
+                                                : Appearance.inirEverywhere
+                                                    ? Appearance.inir.colLayer1Hover
+                                                    : Appearance.auroraEverywhere
+                                                        ? Appearance.aurora.colSubSurface
+                                                        : CF.ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 0.5)
 
                                             onClicked: overlayCurrentPage = index
 
@@ -839,9 +874,11 @@ Scope {
                                                     radius: 2
                                                     anchors.left: parent.left
                                                     anchors.verticalCenter: parent.verticalCenter
-                                                    color: Appearance.inirEverywhere
-                                                        ? Appearance.inir.colAccent
-                                                        : Appearance.colors.colPrimary
+                                                    color: Appearance.angelEverywhere
+                                                        ? Appearance.angel.colPrimary
+                                                        : Appearance.inirEverywhere
+                                                            ? Appearance.inir.colAccent
+                                                            : Appearance.colors.colPrimary
                                                     opacity: navBtn.toggled ? 1 : 0
 
                                                     Behavior on height {
@@ -907,12 +944,17 @@ Scope {
                             id: overlayContentContainer
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: Appearance.rounding.normal
-                            color: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
+                            radius: Appearance.angelEverywhere ? Appearance.angel.roundingNormal
+                                 : Appearance.inirEverywhere ? Appearance.inir.roundingNormal
+                                 : Appearance.rounding.normal
+                            color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                 : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                  : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                  : Appearance.m3colors.m3surfaceContainerLow
-                            border.width: Appearance.inirEverywhere ? 1 : 0
-                            border.color: Appearance.inirEverywhere ? Appearance.inir.colBorderSubtle : "transparent"
+                            border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                                        : Appearance.inirEverywhere ? 1 : 0
+                            border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                                        : Appearance.inirEverywhere ? Appearance.inir.colBorderSubtle : "transparent"
                             clip: true
 
                             // Loading indicator
@@ -1104,6 +1146,9 @@ Scope {
                     }
 
                     // Results card
+                    StyledRectangularShadow {
+                        target: overlaySearchResultsCard
+                    }
                     Rectangle {
                         id: overlaySearchResultsCard
                         visible: root.overlaySearchResults.length > 0
@@ -1112,12 +1157,17 @@ Scope {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.top: parent.top
                         anchors.topMargin: 56
-                        radius: Appearance.rounding.normal
-                        color: Appearance.auroraEverywhere ? Appearance.colors.colLayer1Base
+                        radius: Appearance.angelEverywhere ? Appearance.angel.roundingNormal
+                             : Appearance.inirEverywhere ? Appearance.inir.roundingNormal
+                             : Appearance.rounding.normal
+                        color: Appearance.angelEverywhere ? Appearance.angel.colGlassPopup
+                            : Appearance.auroraEverywhere ? Appearance.colors.colLayer1Base
                             : Appearance.inirEverywhere ? Appearance.inir.colLayer2
                             : Appearance.colors.colLayer1
-                        border.width: Appearance.inirEverywhere ? 1 : 1
-                        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                        border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                                    : Appearance.inirEverywhere ? 1 : 1
+                        border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                            : Appearance.inirEverywhere ? Appearance.inir.colBorder
                             : Appearance.m3colors.m3outlineVariant
 
                         layer.enabled: Appearance.effectsEnabled && !Appearance.auroraEverywhere
@@ -1173,11 +1223,13 @@ Scope {
                                 buttonRadius: Appearance.rounding.small
 
                                 colBackground: ListView.isCurrentItem
-                                    ? (Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                                    ? (Appearance.angelEverywhere ? Appearance.angel.colGlassCardHover
+                                      : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                       : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface
                                       : Appearance.colors.colLayer2)
                                     : "transparent"
-                                colBackgroundHover: Appearance.inirEverywhere ? Appearance.inir.colLayer1Hover
+                                colBackgroundHover: Appearance.angelEverywhere ? Appearance.angel.colGlassCardHover
+                                                  : Appearance.inirEverywhere ? Appearance.inir.colLayer1Hover
                                                   : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                                   : Appearance.colors.colLayer2
 
@@ -1275,7 +1327,8 @@ Scope {
                         width: noResultsRow.implicitWidth + 24
                         height: 36
                         radius: Appearance.rounding.full
-                        color: Appearance.colors.colLayer1
+                        color: Appearance.angelEverywhere ? Appearance.angel.colGlassPopup
+                             : Appearance.colors.colLayer1
                         z: 100
 
                         RowLayout {

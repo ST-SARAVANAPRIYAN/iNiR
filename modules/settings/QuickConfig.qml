@@ -357,11 +357,14 @@ ContentPage {
                             return Math.min(400, Math.max(120, rows * cellH + 2 * Appearance.sizes.spacingSmall))
                         }
                         radius: Appearance.rounding.normal
-                        color: Appearance.inirEverywhere ? Appearance.inir.colLayer0
+                        color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                             : Appearance.inirEverywhere ? Appearance.inir.colLayer0
                              : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                              : Appearance.colors.colLayer0
-                        border.width: Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
-                        border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                        border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                            : Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
+                        border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                                   : Appearance.inirEverywhere ? Appearance.inir.colBorder
                                    : Appearance.colors.colLayer0Border
                         clip: true
 
@@ -514,11 +517,14 @@ ContentPage {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 220
                     radius: Appearance.rounding.normal
-                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer0
+                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                         : Appearance.inirEverywhere ? Appearance.inir.colLayer0
                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                          : Appearance.colors.colLayer0
-                    border.width: Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
-                    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                    border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                        : Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
+                    border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                               : Appearance.inirEverywhere ? Appearance.inir.colBorder
                                : Appearance.colors.colLayer0Border
 
                     RowLayout {
@@ -574,13 +580,15 @@ ContentPage {
                                     width: monitorCard.width
                                     height: monitorCard.height
                                     radius: Appearance.rounding.small
-                                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                          : Appearance.colors.colLayer1
-                                    border.width: Appearance.inirEverywhere ? 1 : (monitorStack.showingBackdrop ? 2 : 1)
+                                    border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                                        : Appearance.inirEverywhere ? 1 : (monitorStack.showingBackdrop ? 2 : 1)
                                     border.color: monitorStack.showingBackdrop
-                                        ? (Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
-                                        : (Appearance.inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer1Border)
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
+                                        : (Appearance.angelEverywhere ? Appearance.angel.colCardBorder : Appearance.inirEverywhere ? Appearance.inir.colBorder : Appearance.colors.colLayer1Border)
                                     clip: true
                                     z: monitorStack.showingBackdrop ? 2 : 0
                                     opacity: monitorStack.showingBackdrop ? 1.0 : 0.6
@@ -695,14 +703,15 @@ ContentPage {
                                     z: monitorStack.showingBackdrop ? 0 : 1
 
                                     radius: Appearance.rounding.small
-                                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                          : Appearance.colors.colLayer1
                                     border.width: monitorStack.isSelected && !monitorStack.showingBackdrop
-                                        ? (Appearance.inirEverywhere ? 1 : 2) : (Appearance.inirEverywhere ? 1 : 0)
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 2) : (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 0)
                                     border.color: monitorStack.isSelected && !monitorStack.showingBackdrop
-                                        ? (Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
-                                        : (Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
+                                        ? (Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
+                                        : (Appearance.angelEverywhere ? Appearance.angel.colCardBorder : Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
                                     clip: true
 
                                     layer.enabled: true
@@ -898,11 +907,14 @@ ContentPage {
                     Layout.fillWidth: true
                     implicitHeight: splitPreviewCol.implicitHeight
                     radius: Appearance.rounding.normal
-                    color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                    color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                          : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                          : Appearance.colors.colLayer1
-                    border.width: Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
-                    border.color: Appearance.inirEverywhere ? Appearance.inir.colBorder
+                    border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth
+                        : Appearance.inirEverywhere ? 1 : (Appearance.auroraEverywhere ? 0 : 1)
+                    border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                               : Appearance.inirEverywhere ? Appearance.inir.colBorder
                                : Appearance.colors.colLayer1Border
                     clip: true
 
@@ -945,14 +957,15 @@ ContentPage {
                                         Layout.fillWidth: true
 
                                         radius: Appearance.rounding.small
-                                        color: Appearance.inirEverywhere ? Appearance.inir.colLayer1
+                                        color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                                             : Appearance.inirEverywhere ? Appearance.inir.colLayer1
                                              : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurface
                                              : Appearance.colors.colLayer1
                                         border.width: splitMonCard.isSelected
-                                            ? (Appearance.inirEverywhere ? 1 : 2) : (Appearance.inirEverywhere ? 1 : 0)
+                                            ? (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 2) : (Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : Appearance.inirEverywhere ? 1 : 0)
                                         border.color: splitMonCard.isSelected
-                                            ? (Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
-                                            : (Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
+                                            ? (Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.inirEverywhere ? Appearance.inir.colAccent : Appearance.colors.colPrimary)
+                                            : (Appearance.angelEverywhere ? Appearance.angel.colCardBorder : Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent")
                                         clip: true
 
                                         scale: splitMonCard.isSelected ? 1.0 : 0.95
@@ -1345,7 +1358,12 @@ ContentPage {
                     ConfigSelectionArray {
                         currentValue: Config.options.bar.cornerStyle
                         onSelected: newValue => {
-                            Config.options.bar.cornerStyle = newValue; // Update local copy
+                            // HUG mode (0) is incompatible with Angel style — revert to Float
+                            if (newValue === 0 && Appearance.angelEverywhere) {
+                                Config.setNestedValue("bar.cornerStyle", 1);
+                                return;
+                            }
+                            Config.setNestedValue("bar.cornerStyle", newValue);
                         }
                         options: [
                             {
