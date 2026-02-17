@@ -257,6 +257,7 @@ binds {
     Mod+T { spawn "bash" "-c" "$HOME/.config/quickshell/ii/scripts/launch-terminal.sh"; }
     Mod+Return { spawn "bash" "-c" "$HOME/.config/quickshell/ii/scripts/launch-terminal.sh"; }
     Super+E { spawn "nautilus"; }
+    Super+W { spawn "bash" "-c" "xdg-open https://"; }
     
     // Window management
     Mod+Q repeat=false { spawn "bash" "-c" "$HOME/.config/quickshell/ii/scripts/close-window.sh"; }

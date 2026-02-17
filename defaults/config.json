@@ -44,11 +44,11 @@
     },
     "angel": {
       "blur": {
-        "intensity": 0.25,
+        "intensity": 0.5,
         "saturation": 0.15,
         "overlayOpacity": 0.35,
-        "noiseOpacity": 0.15,
-        "vignetteStrength": 0.4
+        "noiseOpacity": 0.2,
+        "vignetteStrength": 0.15
       },
       "transparency": {
         "panel": 0.35,
@@ -57,53 +57,53 @@
         "tooltip": 0.25
       },
       "escalonado": {
-        "offsetX": 2,
-        "offsetY": 2,
+        "offsetX": 1,
+        "offsetY": 1,
         "hoverOffsetX": 7,
         "hoverOffsetY": 7,
-        "opacity": 0.4,
-        "borderOpacity": 0.6,
-        "hoverOpacity": 0.6
+        "opacity": 0.5,
+        "borderOpacity": 0.17,
+        "hoverOpacity": 0
       },
       "escalonadoShadow": {
-        "offsetX": 4,
-        "offsetY": 4,
-        "hoverOffsetX": 10,
-        "hoverOffsetY": 10,
-        "opacity": 0.3,
-        "borderOpacity": 0.5,
-        "hoverOpacity": 0.5,
+        "offsetX": 0,
+        "offsetY": 0,
+        "hoverOffsetX": 0,
+        "hoverOffsetY": 0,
+        "opacity": 1,
+        "borderOpacity": 1,
+        "hoverOpacity": 0.6,
         "glass": true,
-        "glassBlur": 0.15,
+        "glassBlur": 0.7,
         "glassOverlay": 0.5
       },
       "border": {
-        "width": 1.5,
-        "accentBarHeight": 0,
-        "accentBarWidth": 0,
-        "coverage": 0.0,
-        "opacity": 0.0,
-        "hoverOpacity": 0.0,
-        "activeOpacity": 0.0,
-        "insetGlowHeight": 0,
-        "insetGlowOpacity": 0.0
+        "width": 0.8,
+        "accentBarHeight": 10,
+        "accentBarWidth": 10,
+        "coverage": 0.6,
+        "opacity": 0.52,
+        "hoverOpacity": 0.5,
+        "activeOpacity": 0.5,
+        "insetGlowHeight": 1,
+        "insetGlowOpacity": 0.2
       },
       "surface": {
-        "panelBorderWidth": 0,
+        "panelBorderWidth": 1,
         "cardBorderWidth": 1,
-        "panelBorderOpacity": 0.0,
-        "cardBorderOpacity": 0.3
+        "panelBorderOpacity": 0.9,
+        "cardBorderOpacity": 0
       },
       "glow": {
-        "opacity": 0.8,
-        "strongOpacity": 0.65
+        "opacity": 0,
+        "strongOpacity": 0
       },
       "rounding": {
-        "small": 10,
-        "normal": 15,
-        "large": 25
+        "small": 0,
+        "normal": 0,
+        "large": 0
       },
-      "colorStrength": 1.0,
+      "colorStrength": 0.6,
       "customPreset": ""
     },
     "transparency": {
@@ -259,7 +259,7 @@
     },
     "borderless": true,
     "bottom": false,
-    "cornerStyle": 2,
+    "cornerStyle": 1,
     "customRounding": -1,
     "edgeModulesLayout": {
       "leftOrder": [
@@ -485,14 +485,14 @@
     "animationDurationMs": 120,
     "backgroundOpacity": 1,
     "clickthroughOpacity": 0.8,
-    "darkenScreen": true,
+    "darkenScreen": false,
     "floatingImage": {
       "imageSource": "",
       "scale": 0.5
     },
     "openingZoomAnimation": false,
     "scrimAnimationDurationMs": 60,
-    "scrimDim": 35
+    "scrimDim": 100
   },
   "overview": {
     "backgroundBlurEnable": true,
@@ -666,7 +666,7 @@
       "showNsfw": false
     },
     "reddit": {
-      "enable": false,
+      "enable": true,
       "subreddits": [
         "unixporn",
         "linux",
@@ -798,12 +798,14 @@
     "lockBeforeSleep": true
   },
   "gameMode": {
-    "autoDetect": true,
-    "disableAnimations": true,
-    "disableEffects": true,
-    "disableNiriAnimations": true,
+    "autoDetect": false,
+    "disableAnimations": false,
+    "disableEffects": false,
+    "disableNiriAnimations": false,
     "disableReloadToasts": true,
-    "checkInterval": 2000
+    "disableDiscoverOverlay": true,
+    "checkInterval": 2000,
+    "minimalMode": false
   },
   "reloadToasts": {
     "enable": true
@@ -820,7 +822,7 @@
     "onScreenDisplay": true,
     "onScreenKeyboard": true,
     "overview": true,
-    "overlay": true,
+    "overlay": false,
     "polkit": true,
     "regionSelector": true,
     "reloadPopup": true,

@@ -228,6 +228,7 @@ CRITICAL_FONTS=(
   ttf-material-symbols-variable-git
   ttf-jetbrains-mono-nerd
   ttf-roboto-flex
+  ttf-oxanium
 )
 
 # Optional fonts (have system fallbacks)
@@ -244,6 +245,7 @@ declare -A FONT_FALLBACK_URLS=(
   ["otf-space-grotesk"]="https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/SpaceGrotesk%5Bwght%5D.ttf"
   ["ttf-readex-pro"]="https://raw.githubusercontent.com/ThomasJockin/readexpro/master/fonts/variable/Readexpro%5BHEXP%2Cwght%5D.ttf"
   ["ttf-rubik-vf"]="https://github.com/googlefonts/rubik/raw/main/fonts/variable/Rubik%5Bwght%5D.ttf"
+  ["ttf-oxanium"]="https://github.com/google/fonts/raw/main/ofl/oxanium/Oxanium%5Bwght%5D.ttf"
 )
 
 # Function to install font from direct URL

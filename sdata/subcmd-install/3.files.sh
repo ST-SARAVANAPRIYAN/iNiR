@@ -697,26 +697,30 @@ if [[ "${INSTALL_FIRSTRUN}" == true && -n "${DEFAULT_WALLPAPER}" && -f "${DEFAUL
     fi
     # Use --config to ensure correct config file is used
     if matugen image "${DEFAULT_WALLPAPER}" --mode dark --config "${XDG_CONFIG_HOME}/matugen/config.toml" 2>&1; then
-      log_success "Theme colors generated"
+      log_success "Theme colors generated (matugen)"
 
-      # Generate Darkly.colors for Qt file dialogs (Darkly style needs this)
-      if [[ -f "${II_TARGET}/scripts/colors/apply-gtk-theme.sh" ]]; then
-        bash "${II_TARGET}/scripts/colors/apply-gtk-theme.sh" 2>/dev/null || true
-        log_success "Qt Darkly theme colors generated"
+      # Generate material_colors.scss from colors.json (needed by applycolor.sh chain)
+      local python_cmd="${ILLOGICAL_IMPULSE_VIRTUAL_ENV}/bin/python"
+      local gen_material="${II_TARGET}/scripts/colors/generate_colors_material.py"
+      local colors_json="${XDG_STATE_HOME}/quickshell/user/generated/colors.json"
+      local scss_file="${XDG_STATE_HOME}/quickshell/user/generated/material_colors.scss"
+      if [[ -f "$gen_material" && -f "$colors_json" ]]; then
+        local _py=""
+        [[ -x "$python_cmd" ]] && _py="$python_cmd" || { command -v python3 &>/dev/null && _py="python3"; }
+        if [[ -n "$_py" ]]; then
+          "$_py" "$gen_material" --json-output "$colors_json" > "$scss_file" 2>/dev/null || true
+          [[ -s "$scss_file" ]] && log_success "Material colors SCSS generated"
+        fi
       fi
 
-      # Generate terminal color configs (foot, alacritty, kitty, ghostty, etc.)
-      local python_cmd="${ILLOGICAL_IMPULSE_VIRTUAL_ENV}/bin/python"
-      local gen_script="${II_TARGET}/scripts/colors/generate_terminal_configs.py"
-      local scss_file="${XDG_STATE_HOME}/quickshell/user/generated/material_colors.scss"
-      if [[ -f "$gen_script" && -f "$scss_file" ]]; then
-        if [[ -x "$python_cmd" ]]; then
-          "$python_cmd" "$gen_script" --scss "$scss_file" 2>/dev/null || true
-          log_success "Terminal color configs generated"
-        elif command -v python3 &>/dev/null; then
-          python3 "$gen_script" --scss "$scss_file" 2>/dev/null || true
-          log_success "Terminal color configs generated"
-        fi
+      # Run applycolor.sh which handles GTK, KDE, Darkly, and terminal theming
+      if [[ -s "$scss_file" && -f "${II_TARGET}/scripts/colors/applycolor.sh" ]]; then
+        bash "${II_TARGET}/scripts/colors/applycolor.sh" 2>/dev/null || true
+        log_success "GTK/KDE/terminal theme colors applied"
+      elif [[ -f "${II_TARGET}/scripts/colors/apply-gtk-theme.sh" ]]; then
+        # Fallback: extract colors from scss and pass to apply-gtk-theme.sh
+        bash "${II_TARGET}/scripts/colors/apply-gtk-theme.sh" 2>/dev/null || true
+        log_success "Qt Darkly theme colors generated (fallback)"
       fi
     else
       log_warning "Matugen failed to generate colors. Theme may not work correctly."

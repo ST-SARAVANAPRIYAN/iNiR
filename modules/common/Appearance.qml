@@ -331,13 +331,19 @@ Singleton {
     // 2. Theme requests mono (Matrix, Vesper) -> Monospace
     // 3. Theme requests serif (Angel) -> Serif (if mapped)
     // 4. Default -> Config Main Font
-    readonly property bool _forceMono: globalStyle === "inir" || globalStyle === "angel" || _themeMeta.fontStyle === "mono"
+    readonly property bool _forceMono: globalStyle === "inir" || _themeMeta.fontStyle === "mono"
+    readonly property string _angelFont: "Oxanium"
+    readonly property bool _useAngelFont: globalStyle === "angel"
     
     font: QtObject {
         property QtObject family: QtObject {
-            property string main: root._forceMono ? monospace : (Config.options?.appearance?.typography?.mainFont ?? "Roboto Flex")
-            property string numbers: "Rubik"
-            property string title: root._forceMono ? monospace : (Config.options?.appearance?.typography?.titleFont ?? "Gabarito")
+            property string main: root._useAngelFont ? root._angelFont
+                                : root._forceMono ? monospace
+                                : (Config.options?.appearance?.typography?.mainFont ?? "Roboto Flex")
+            property string numbers: root._useAngelFont ? root._angelFont : "Rubik"
+            property string title: root._useAngelFont ? root._angelFont
+                                 : root._forceMono ? monospace
+                                 : (Config.options?.appearance?.typography?.titleFont ?? "Gabarito")
             property string iconMaterial: "Material Symbols Rounded"
             property string iconNerd: "JetBrains Mono NF"
             property string monospace: Config.options?.appearance?.typography?.monospaceFont ?? "JetBrainsMono Nerd Font"
