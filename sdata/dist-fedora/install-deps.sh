@@ -27,7 +27,7 @@ echo -e "${STY_CYAN}[$0]: Detected Fedora ${FEDORA_VERSION}${STY_RST}"
 # Optional: install only a specific list of missing deps
 #####################################################################################
 if [[ -n "${ONLY_MISSING_DEPS:-}" ]]; then
-  echo -e "${STY_CYAN}[$0]: Installing missing dependencies only...${STY_RST}"
+  tui_info "Installing missing dependencies only..."
 
   declare -A cmd_to_pkg=(
     [qs]="quickshell"
@@ -54,34 +54,34 @@ if [[ -n "${ONLY_MISSING_DEPS:-}" ]]; then
     [fuzzel]="fuzzel"
   )
 
-  local installflags=""
-  $ask || installflags="-y --skip-unavailable"
+  _fed_installflags=""
+  $ask || _fed_installflags="-y --skip-unavailable"
 
-  local missing_cmds=()
-  local missing_pkgs=()
-  read -r -a missing_cmds <<<"$ONLY_MISSING_DEPS"
-  for cmd in "${missing_cmds[@]}"; do
-    local pkg="${cmd_to_pkg[$cmd]:-$cmd}"
-    [[ " ${missing_pkgs[*]} " == *" ${pkg} "* ]] || missing_pkgs+=("$pkg")
+  _fed_miss_cmds=()
+  _fed_miss_pkgs=()
+  read -r -a _fed_miss_cmds <<<"$ONLY_MISSING_DEPS"
+  for cmd in "${_fed_miss_cmds[@]}"; do
+    _fed_pkg="${cmd_to_pkg[$cmd]:-$cmd}"
+    [[ " ${_fed_miss_pkgs[*]} " == *" ${_fed_pkg} "* ]] || _fed_miss_pkgs+=("$_fed_pkg")
   done
 
-  if [[ ${#missing_pkgs[@]} -gt 0 ]]; then
+  if [[ ${#_fed_miss_pkgs[@]} -gt 0 ]]; then
     case ${SKIP_SYSUPDATE:-false} in
-      true) echo -e "${STY_CYAN}[$0]: Skipping system update${STY_RST}" ;;
+      true) log_info "Skipping system update" ;;
       *) v sudo dnf upgrade -y --refresh ;;
     esac
 
     # quickshell and niri come from COPR on Fedora; ensure repos are enabled
-    if [[ " ${missing_pkgs[*]} " == *" quickshell " ]]; then
+    if [[ " ${_fed_miss_pkgs[*]} " == *" quickshell " ]]; then
       dnf copr list --enabled 2>/dev/null | grep -q "errornointernet/quickshell" || \
         v sudo dnf copr enable -y errornointernet/quickshell
     fi
-    if [[ " ${missing_pkgs[*]} " == *" niri " ]]; then
+    if [[ " ${_fed_miss_pkgs[*]} " == *" niri " ]]; then
       dnf copr list --enabled 2>/dev/null | grep -q "yalter/niri" || \
         v sudo dnf copr enable -y yalter/niri
     fi
 
-    v sudo dnf install $installflags "${missing_pkgs[@]}"
+    v sudo dnf install $_fed_installflags "${_fed_miss_pkgs[@]}"
   fi
 
   unset ONLY_MISSING_DEPS
@@ -92,11 +92,11 @@ fi
 # System update (optional)
 #####################################################################################
 case ${SKIP_SYSUPDATE:-false} in
-  true) 
-    echo -e "${STY_CYAN}[$0]: Skipping system update${STY_RST}"
+  true)
+    log_info "Skipping system update"
     ;;
-  *) 
-    echo -e "${STY_CYAN}[$0]: Updating system...${STY_RST}"
+  *)
+    tui_info "Updating system..."
     v sudo dnf upgrade -y --refresh
     ;;
 esac

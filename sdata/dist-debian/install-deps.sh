@@ -43,7 +43,7 @@ echo -e "${STY_CYAN}[$0]: Architecture: ${ARCH}${STY_RST}"
 # Optional: install only a specific list of missing deps
 #####################################################################################
 if [[ -n "${ONLY_MISSING_DEPS:-}" ]]; then
-  echo -e "${STY_CYAN}[$0]: Installing missing dependencies only...${STY_RST}"
+  tui_info "Installing missing dependencies only..."
 
   installflags=""
   $ask || installflags="-y"
@@ -74,39 +74,35 @@ if [[ -n "${ONLY_MISSING_DEPS:-}" ]]; then
     [fuzzel]="fuzzel"
   )
 
-  local missing_cmds=()
-  local requested_pkgs=()
-  local installable_pkgs=()
-  read -r -a missing_cmds <<<"$ONLY_MISSING_DEPS"
+  _deb_miss_cmds=()
+  _deb_requested_pkgs=()
+  _deb_installable_pkgs=()
+  read -r -a _deb_miss_cmds <<<"$ONLY_MISSING_DEPS"
 
-  for cmd in "${missing_cmds[@]}"; do
-    local pkg="${cmd_to_pkg[$cmd]:-$cmd}"
-    [[ " ${requested_pkgs[*]} " == *" ${pkg} "* ]] || requested_pkgs+=("$pkg")
+  for cmd in "${_deb_miss_cmds[@]}"; do
+    _deb_pkg="${cmd_to_pkg[$cmd]:-$cmd}"
+    [[ " ${_deb_requested_pkgs[*]} " == *" ${_deb_pkg} "* ]] || _deb_requested_pkgs+=("$_deb_pkg")
   done
 
-  for pkg in "${requested_pkgs[@]}"; do
+  for pkg in "${_deb_requested_pkgs[@]}"; do
     if apt-cache show "$pkg" &>/dev/null 2>&1; then
-      installable_pkgs+=("$pkg")
+      _deb_installable_pkgs+=("$pkg")
     else
-      echo -e "${STY_YELLOW}[$0]: Package not available in current repos: $pkg${STY_RST}"
+      log_warning "Package not available in current repos: $pkg"
     fi
   done
 
-  if [[ ${#installable_pkgs[@]} -gt 0 ]]; then
+  if [[ ${#_deb_installable_pkgs[@]} -gt 0 ]]; then
     case ${SKIP_SYSUPDATE:-false} in
-      true)
-        echo -e "${STY_CYAN}[$0]: Skipping system update${STY_RST}"
-        ;;
-      *)
-        v sudo apt update
-        ;;
+      true) log_info "Skipping system update" ;;
+      *) v sudo apt update ;;
     esac
 
-    if ! sudo apt install $installflags "${installable_pkgs[@]}" 2>/dev/null; then
-      echo -e "${STY_YELLOW}[$0]: Batch install failed, trying individually...${STY_RST}"
-      for pkg in "${installable_pkgs[@]}"; do
+    if ! sudo apt install $installflags "${_deb_installable_pkgs[@]}" 2>/dev/null; then
+      log_warning "Batch install failed, trying individually..."
+      for pkg in "${_deb_installable_pkgs[@]}"; do
         sudo apt install $installflags "$pkg" 2>/dev/null || \
-          echo -e "${STY_YELLOW}[$0]: Could not install $pkg${STY_RST}"
+          log_warning "Could not install $pkg"
       done
     fi
   fi
