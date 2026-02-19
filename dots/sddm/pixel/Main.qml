@@ -57,7 +57,7 @@ MouseArea {
         return materialSymbolsFont.status === FontLoader.Ready ? materialSymbolsFont.name : ""
     }
 
-    function makeFileUrl(p) {
+    function makeFileUrl(p): string {
         if (!p || p.length === 0) return ""
         return p.startsWith("file://") ? p : "file://" + p
     }

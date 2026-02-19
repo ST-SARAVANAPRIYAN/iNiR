@@ -97,22 +97,24 @@ def update_theme_conf(colors):
         return False
 
     with open(THEME_CONF) as f:
-        content = f.read()
+        lines = f.read().split("\n")
 
-    for key, value in colors.items():
-        lines = content.split("\n")
-        new_lines = []
-        updated = False
-        for line in lines:
-            stripped = line.strip()
+    remaining = dict(colors)
+    new_lines = []
+    for line in lines:
+        stripped = line.strip()
+        matched = False
+        for key, value in remaining.items():
             if stripped.startswith(f"{key}="):
                 new_lines.append(f"{key}={value}")
-                updated = True
-            else:
-                new_lines.append(line)
-        if not updated:
-            new_lines.append(f"{key}={value}")
-        content = "\n".join(new_lines)
+                remaining.pop(key)
+                matched = True
+                break
+        if not matched:
+            new_lines.append(line)
+    for key, value in remaining.items():
+        new_lines.append(f"{key}={value}")
+    content = "\n".join(new_lines)
 
     try:
         proc = subprocess.run(
@@ -136,10 +138,10 @@ VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".avi", ".mov", ".gif", ".webp"}
 
 
 def extract_video_frame(video_path, dest_png):
-    """Use ffmpeg to extract the first frame of a video as PNG. Returns True on success."""
+    """Use ffmpeg to extract the first frame of a video as PNG. Returns tmp path on success, None on failure."""
     if not shutil.which("ffmpeg"):
         print("[sddm-pixel] ffmpeg not found — cannot extract video frame")
-        return False
+        return None
     tmp = os.path.join("/tmp", "sddm-pixel-frame.tmp.png")
     try:
         proc = subprocess.run(
