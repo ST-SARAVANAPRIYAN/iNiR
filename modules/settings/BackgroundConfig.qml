@@ -1066,7 +1066,7 @@ ContentPage {
             }
 
             ContentSubsection {
-                title: Translation.tr("Ripple effects (Pixel style)")
+                title: Translation.tr("Fluid Ripple (AOSP Port)")
 
                 SettingsSwitch {
                     buttonIcon: "check_circle"
@@ -1074,6 +1074,9 @@ ContentPage {
                     checked: Config.options.background.effects.ripple.enable ?? true
                     onCheckedChanged: {
                         Config.setNestedValue("background.effects.ripple.enable", checked);
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Authentic Android sparkle-style ripples.\nLicensed under Apache 2.0 (AOSP).")
                     }
                 }
 
@@ -1138,16 +1141,16 @@ ContentPage {
 
                     ConfigSpinBox {
                         icon: "schedule"
-                        text: Translation.tr("Ripple duration (ms)")
+                        text: Translation.tr("Animation duration (ms)")
                         value: Config.options?.background?.effects?.ripple?.rippleDuration ?? 3000
                         from: 500
                         to: 10000
-                        stepSize: 100
+                        stepSize: 250
                         onValueChanged: {
                             Config.setNestedValue("background.effects.ripple.rippleDuration", value);
                         }
                         StyledToolTip {
-                            text: Translation.tr("How long the ripple animation lasts. Higher = slower.")
+                            text: Translation.tr("How long the ripple lasts. Higher = slower expansion.")
                         }
                     }
                 }

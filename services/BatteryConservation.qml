@@ -6,14 +6,14 @@ import Quickshell.Io
 import qs.modules.common
 
 // ============================================================================
-// LENOVO CONSERVATION MODE SERVICE
+// BATTERY CONSERVATION MODE SERVICE
 // ============================================================================
 
 Singleton {
     id: root
 
     // --- Configuration ---
-    // Common paths for Lenovo conservation mode
+    // Common paths for battery conservation mode (manufacturer specific)
     readonly property list<string> potentialNodes: [
         "/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode",
         "/sys/bus/platform/devices/VPC2004:00/conservation_mode",
@@ -26,7 +26,7 @@ Singleton {
     // --- Public State ---
     property bool isActive: false
     property bool loading: false
-    property bool available: false // Whether to show the toggle (is it a Lenovo?)
+    property bool available: false // Whether to show the toggle
     property bool functional: false // Whether the control node was actually found
 
     // --- Logic ---
@@ -44,7 +44,7 @@ Singleton {
 
     // --- Processes ---
 
-    // 1. Hardware detection: Is this a Lenovo laptop?
+    // 1. Hardware detection: Check for supported hardware
     Process {
         id: hardwareCheck
         command: ["sh", "-c", "grep -qi 'lenovo' /sys/class/dmi/id/sys_vendor || test -d /sys/bus/platform/devices/VPC2004:00"]
@@ -55,7 +55,7 @@ Singleton {
         }
     }
 
-    // 2. Node detection: Search for the actual conservation_mode file
+    // 2. Node detection: Search for the actual control file
     Process {
         id: findNode
         command: ["sh", "-c", "find /sys/bus/platform/devices/VPC2004:00/ /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/ /sys/devices/platform/ideapad_laptop/ -name conservation_mode 2>/dev/null | head -n 1"]
@@ -106,7 +106,7 @@ Singleton {
                 root.updateStatus();
             } else {
                 root.loading = false;
-                Quickshell.execDetached(["notify-send", "-a", "System", "Conservation Mode", "Failed to update setting. Ensure ideapad_laptop module is loaded."]);
+                Quickshell.execDetached(["notify-send", "-a", "System", "Battery Conservation", "Failed to update setting. Ensure the required kernel driver is loaded."]);
             }
         }
     }
@@ -119,11 +119,11 @@ Singleton {
         onTriggered: root.updateStatus()
     }
 
-    // Retry finding the node (in case driver is loaded late)
+    // Retry finding the node
     Timer {
         interval: 15000
         running: root.available && !root.functional
         repeat: true
-        onTriggered: findNode.running = true
+        onTriggered: findNode.restart()
     }
 }

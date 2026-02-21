@@ -5,9 +5,7 @@ import qs.modules.common.widgets
 import qs.services
 
 // ============================================================================
-// LENOVO CONSERVATION MODE BAR MODULE
-// ============================================================================
-// Robust implementation matching the BatteryIndicator popup pattern.
+// BATTERY CONSERVATION MODE BAR MODULE
 // ============================================================================
 
 MouseArea {
@@ -19,21 +17,20 @@ MouseArea {
     property real iconSize: Appearance.font.pixelSize.large
     
     // --- State Mapping ---
-    enabled: LenovoService.functional
-    visible: LenovoService.available
+    enabled: BatteryConservation.functional
+    visible: BatteryConservation.available
     hoverEnabled: true
 
-    opacity: LenovoService.functional ? 1.0 : 0.5
+    opacity: BatteryConservation.functional ? 1.0 : 0.5
 
     // --- Dynamic Sizing ---
-    // Fixing the "hardcoded" space issue: width is 0 if module is disabled
     implicitHeight: Appearance.sizes.barHeight
     implicitWidth: (visible && (Config.options?.bar?.modules?.lenovoConservation ?? true)) 
         ? (contentLayout.implicitWidth + 20) 
         : 0
 
     // --- Action ---
-    onClicked: if (LenovoService.functional) LenovoService.toggle()
+    onClicked: if (BatteryConservation.functional) BatteryConservation.toggle()
 
     // --- Layout ---
     RowLayout {
@@ -44,13 +41,13 @@ MouseArea {
 
         MaterialSymbol {
             id: symbol
-            text: !LenovoService.functional ? "error" : (LenovoService.isActive ? "shield_with_heart" : "shield")
+            text: !BatteryConservation.functional ? "error" : (BatteryConservation.isActive ? "shield_with_heart" : "shield")
             iconSize: root.iconSize
-            fill: LenovoService.isActive ? 1 : 0
+            fill: BatteryConservation.isActive ? 1 : 0
             
-            color: !LenovoService.functional 
+            color: !BatteryConservation.functional 
                 ? Appearance.colors.colError
-                : (LenovoService.isActive 
+                : (BatteryConservation.isActive 
                     ? (Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary)
                     : (Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer2))
             
@@ -59,12 +56,12 @@ MouseArea {
 
         StyledText {
             visible: !root.compact && root.showLabel
-            text: !LenovoService.functional ? Translation.tr("Missing") : (LenovoService.isActive ? Translation.tr("Conserve") : Translation.tr("Standard"))
+            text: !BatteryConservation.functional ? Translation.tr("Missing") : (BatteryConservation.isActive ? Translation.tr("Conserve") : Translation.tr("Standard"))
             font.bold: true
             font.pixelSize: Appearance.font.pixelSize.small
-            color: !LenovoService.functional 
+            color: !BatteryConservation.functional 
                 ? Appearance.colors.colError
-                : (LenovoService.isActive 
+                : (BatteryConservation.isActive 
                     ? (Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary)
                     : (Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer2))
         }
@@ -77,15 +74,14 @@ MouseArea {
         colBackground: "transparent"
         colBackgroundHover: "transparent"
         rippleEnabled: true
-        onClicked: LenovoService.toggle()
+        onClicked: BatteryConservation.toggle()
         buttonRadius: Appearance.rounding.small
         visible: root.implicitWidth > 0
     }
 
-    // --- Popup (Matches Battery Indicator) ---
-    // Referenced directly as it's in the same directory now
-    LenovoPopup {
-        id: lenovoPopup
+    // --- Popup ---
+    BatteryConservationPopup {
+        id: batteryConservationPopup
         hoverTarget: root
     }
 
@@ -94,7 +90,7 @@ MouseArea {
         anchors.fill: parent
         radius: Appearance.rounding.small
         color: Qt.rgba(0,0,0,0.4)
-        visible: LenovoService.loading && root.implicitWidth > 0
+        visible: BatteryConservation.loading && root.implicitWidth > 0
 
         MaterialLoadingIndicator {
             anchors.centerIn: parent

@@ -19,9 +19,9 @@ StyledPopup {
 
             MaterialSymbol {
                 anchors.verticalCenter: parent.verticalCenter
-                text: LenovoService.isActive ? "shield_with_heart" : "shield"
+                text: BatteryConservation.isActive ? "shield_with_heart" : "shield"
                 iconSize: Appearance.font.pixelSize.large
-                color: LenovoService.isActive 
+                color: BatteryConservation.isActive 
                     ? (Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary)
                     : Appearance.colors.colOnSurfaceVariant
             }
@@ -40,12 +40,12 @@ StyledPopup {
         // Status description
         StyledText {
             Layout.fillWidth: true
-            text: !LenovoService.functional
-                ? Translation.tr("Control node not found. Ensure the 'ideapad_laptop' kernel module is loaded.")
-                : (LenovoService.isActive 
+            text: !BatteryConservation.functional
+                ? Translation.tr("Control node not found. Ensure the required kernel driver is loaded.")
+                : (BatteryConservation.isActive 
                     ? Translation.tr("Battery protection is active.\nCharging is limited to extend lifespan.") 
                     : Translation.tr("Standard charging mode.\nBattery will charge to 100%."))
-            color: !LenovoService.functional ? Appearance.colors.colError : Appearance.colors.colSubtext
+            color: !BatteryConservation.functional ? Appearance.colors.colError : Appearance.colors.colSubtext
             font.pixelSize: Appearance.font.pixelSize.smaller
             wrapMode: Text.WordWrap
             Layout.maximumWidth: 200
@@ -53,7 +53,7 @@ StyledPopup {
         
         // Hint
         StyledText {
-            visible: LenovoService.functional
+            visible: BatteryConservation.functional
             text: Translation.tr("Click to toggle")
             font.italic: true
             font.pixelSize: 10

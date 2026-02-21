@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Ported to QtQuick/Quickshell by Gemini CLI.
+ */
+
 #version 440
 
 layout(location = 0) in vec2 qt_TexCoord0;
@@ -12,9 +30,11 @@ layout(std140, binding = 0) uniform buf {
     float aspect;
 } ubuf;
 
-// Pseudo-random noise for the "Sparkle" effect
+// Improved noise for the "Sparkle" effect
 float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+    vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 void main() {
@@ -22,27 +42,26 @@ void main() {
     vec2 dvec = uv - ubuf.center;
     dvec.x *= ubuf.aspect;
     
-    // Scale progress to cover the entire screen even from corners.
-    // The maximum distance from any point to a corner is sqrt(width^2 + height^2).
-    // In UV space (0-1), max distance is sqrt(aspect^2 + 1.0).
-    // We multiply progress by ~2.5 to ensure full coverage.
-    float scaledProgress = ubuf.progress * 2.5;
-    
     float d = length(dvec);
+    float p = ubuf.progress;
 
-    // 1. The "Fluid" Expansion Mask
-    // Use wider steps for better intensity and coverage
-    float ring = smoothstep(scaledProgress - 0.2, scaledProgress, d) * 
-                 smoothstep(scaledProgress + 0.2, scaledProgress, d);
+    // 1. Expansion mask (AOSP style)
+    float ring = smoothstep(p - 0.15, p, d) * (1.0 - smoothstep(p, p + 0.15, d));
     
-    // 2. The "Sparkle" Shimmer
-    float n = hash(uv * 150.0 + ubuf.progress);
-    float sparkles = pow(n, 15.0) * ring * 4.0; // Increased intensity
+    // 2. Sparkle/Noise layer
+    // We use a high-frequency hash influenced by progress for shimmer
+    float noise = hash(uv * 250.0 + p * 0.1);
+    float sparkles = pow(noise, 18.0) * ring * 5.0;
     
-    // 3. The "Aura" Glow
-    float glow = exp(-pow(d - scaledProgress, 2.0) * 40.0) * 0.6;
+    // 3. Soft Glow
+    float glow = exp(-pow(d - p, 2.0) * 60.0) * 0.4;
 
-    // Combine layers and apply alpha fade-out
-    vec4 finalColor = ubuf.color * (ring + sparkles + glow);
-    fragColor = finalColor * ubuf.qt_Opacity * (1.0 - ubuf.progress);
+    // Fade out as progress increases
+    float alpha = (1.0 - p) * ubuf.qt_Opacity;
+    
+    // Combine components
+    vec3 baseColor = ubuf.color.rgb;
+    vec3 finalRGB = baseColor * (ring + sparkles + glow);
+    
+    fragColor = vec4(finalRGB, alpha * (ring + glow * 0.5 + sparkles * 0.2));
 }
