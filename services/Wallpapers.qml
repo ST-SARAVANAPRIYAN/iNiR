@@ -69,10 +69,9 @@ Singleton {
             const _dep = root.videoFirstFrames // reactive binding
             const ff = root.videoFirstFrames[path]
             if (ff) return ff.startsWith("file://") ? ff : "file://" + ff
-            const thumb = Config.options?.background?.thumbnailPath ?? ""
-            if (thumb) return thumb.startsWith("file://") ? thumb : "file://" + thumb
+            const expected = root._videoThumbDir + "/" + MD5.hash(path) + ".jpg"
             root.ensureVideoFirstFrame(path)
-            return ""
+            return "file://" + expected
         }
         return path.startsWith("file://") ? path : ("file://" + path)
     }

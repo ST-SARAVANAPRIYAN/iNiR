@@ -5,7 +5,9 @@ import Quickshell
 import Quickshell.Hyprland
 
 import qs.modules.common
+import qs.modules.common.functions
 import qs.services
+import "root:modules/common/functions/md5.js" as MD5
 
 Singleton {
     id: root
@@ -73,10 +75,9 @@ Singleton {
                 if (isVideoPath(p)) {
                     const ff = Wallpapers.getVideoFirstFramePath(p)
                     if (ff) return ff.startsWith("file://") ? ff : "file://" + ff
-                    const configThumb = Config.options?.background?.thumbnailPath ?? ""
-                    if (configThumb) return configThumb.startsWith("file://") ? configThumb : "file://" + configThumb
+                    const expected = Wallpapers._videoThumbDir + "/" + MD5.hash(p) + ".jpg"
                     Wallpapers.ensureVideoFirstFrame(p)
-                    return ""
+                    return "file://" + expected
                 }
                 return p.startsWith("file://") ? p : "file://" + p
             }
