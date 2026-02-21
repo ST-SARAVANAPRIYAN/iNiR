@@ -216,10 +216,13 @@ case "${SKIP_NIRI}" in
     ;;
 esac
 
-# Matugen (theming)
-if [[ -d "dots/.config/matugen" ]]; then
+# Matugen (theming) — defaults/ is the primary source (kept in sync with dots/)
+if [[ -d "defaults/matugen" ]]; then
+  install_dir__sync "defaults/matugen" "${XDG_CONFIG_HOME}/matugen"
+  log_success "Matugen config installed (defaults)"
+elif [[ -d "dots/.config/matugen" ]]; then
   install_dir__sync "dots/.config/matugen" "${XDG_CONFIG_HOME}/matugen"
-  log_success "Matugen config installed"
+  log_success "Matugen config installed (dots)"
 fi
 
 # ii-pixel-sddm theme (login screen matching ii lockscreen aesthetic)

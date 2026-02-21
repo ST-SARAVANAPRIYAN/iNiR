@@ -46,6 +46,13 @@ output_path = '~/.local/state/quickshell/user/generated/color.txt'
 input_path = '~/.config/matugen/templates/wallpaper.txt'
 output_path = '~/.local/state/quickshell/user/generated/wallpaper/path.txt'
 
+# Firefox Material Fox theme (easier to distribute than pywalfox)
+# Setup: Link output to ~/.mozilla/firefox/<profile>/chrome/theme-material-blue.css
+# See: https://github.com/edelvarden/material-fox-updated
+[templates.firefox_materialfox]
+input_path = '~/.config/matugen/templates/firefox/materialfox.css'
+output_path = '~/.local/state/quickshell/user/generated/firefox-materialfox.css'
+
 # SDDM ii-pixel theme sync (safe no-op if script/theme are not present)
 [templates.ii_pixel_sddm_sync]
 input_path = '/dev/null'
