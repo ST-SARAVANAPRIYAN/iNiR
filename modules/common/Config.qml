@@ -479,6 +479,15 @@ Singleton {
                     property int videoBlurStrength: 50
                     property int dim: 0 // 0-100 percentage (base overlay)
                     property int dynamicDim: 0 // Extra dim when there are windows on the current workspace (0-100)
+                    property JsonObject ripple: JsonObject {
+                        property bool enable: true
+                        property bool charging: true
+                        property bool overview: true
+                        property bool reload: true
+                        property bool lock: true
+                        property bool session: true
+                        property bool hotcorners: true
+                    }
                 }
                 property JsonObject backdrop: JsonObject {
                     property bool enable: true
@@ -559,6 +568,7 @@ Singleton {
                     property bool rightSidebarButton: true
                     property bool sysTray: true
                     property bool weather: true
+                    property bool lenovoConservation: true
                 }
                 property JsonObject modulesPlacement: JsonObject {
                     property string resources: "start"
@@ -567,11 +577,12 @@ Singleton {
                     property string clock: "end"
                     property string utilButtons: "end"
                     property string battery: "end"
+                    property string lenovoConservation: "end"
                 }
                 property JsonObject modulesLayout: JsonObject {
                     // Global ordering of central bar modules.
                     // Valid ids: resources, media, workspaces, clock, utilButtons, battery
-                    property list<string> order: ["resources", "media", "workspaces", "clock", "utilButtons", "battery"]
+                    property list<string> order: ["resources", "media", "workspaces", "clock", "utilButtons", "battery", "lenovoConservation"]
                 }
                 property JsonObject edgeModulesLayout: JsonObject {
                     // Ordering of side modules (left and right sections)
@@ -599,6 +610,7 @@ Singleton {
                     property bool showScreenCast: false
                     property string screenCastOutput: "HDMI-A-1"
                     property bool showNotepad: true
+                    property bool showLenovoConservation: true
                 }
                 property JsonObject tray: JsonObject {
                     property bool monochromeIcons: true
