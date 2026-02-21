@@ -27,6 +27,29 @@ MouseArea {
     readonly property real blurRadius: Config.options?.lock?.blur?.radius ?? 64
     readonly property real blurZoom: Config.options?.lock?.blur?.extraZoom ?? 1.1
     
+    // Resolve wallpaper path: detect video/gif and use thumbnail
+    readonly property string _wallpaperSource: Config.options?.background?.wallpaperPath ?? ""
+    readonly property string _wallpaperPath: {
+        const path = _wallpaperSource;
+        if (!path) return "";
+        
+        const lowerPath = path.toLowerCase();
+        const isVideo = lowerPath.endsWith(".mp4") || lowerPath.endsWith(".webm") || lowerPath.endsWith(".mkv") || lowerPath.endsWith(".avi") || lowerPath.endsWith(".mov");
+        const isGif = lowerPath.endsWith(".gif");
+        
+        if (isVideo || isGif) {
+            // Use thumbnail (frozen first frame) for video/gif wallpapers
+            const thumbnail = Config.options?.background?.thumbnailPath ?? "";
+            return thumbnail || path;
+        }
+        return path;
+    }
+    readonly property bool wallpaperIsAnimated: {
+        const lowerPath = _wallpaperSource.toLowerCase();
+        return lowerPath.endsWith(".mp4") || lowerPath.endsWith(".webm") || lowerPath.endsWith(".mkv") || 
+               lowerPath.endsWith(".avi") || lowerPath.endsWith(".mov") || lowerPath.endsWith(".gif");
+    }
+    
     // Emergency fallback - triple click anywhere to force unlock (safety net)
     property int emergencyClickCount: 0
     Timer {
@@ -42,11 +65,11 @@ MouseArea {
         z: -1
     }
     
-    // Background wallpaper with blur
+    // Background wallpaper with blur (uses thumbnail for video/gif)
     Image {
         id: backgroundWallpaper
         anchors.fill: parent
-        source: Config.options?.background?.wallpaperPath ?? ""
+        source: root._wallpaperPath
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         
