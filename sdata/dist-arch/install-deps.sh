@@ -261,7 +261,6 @@ tui_info "Installing AUR packages..."
 
 AUR_PACKAGES=(
   # Qt6 extras (not in official repos)
-  google-breakpad
   qt6-avif-image-plugin
   
   # Note: Python deps are handled via uv + requirements.txt, not AUR packages

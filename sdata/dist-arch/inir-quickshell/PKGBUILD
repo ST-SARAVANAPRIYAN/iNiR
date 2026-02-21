@@ -47,6 +47,5 @@ depends=(
 )
 
 # AUR dependencies (installed separately, minimal compilation)
-# google-breakpad
 # qt6-avif-image-plugin
 # NOTE: quickshell is now in official repos (extra) - no AUR needed!

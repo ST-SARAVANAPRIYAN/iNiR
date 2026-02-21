@@ -83,7 +83,6 @@ Qt6 stack and Quickshell runtime.
 
 | Package | Purpose |
 |---------|---------|
-| `google-breakpad` | Crash reporting |
 | `qt6-avif-image-plugin` | AVIF image support |
 
 ---
