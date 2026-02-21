@@ -87,11 +87,11 @@ Item {
                 implicitWidth: modelData.width
                 implicitHeight: modelData.height
 
-                AndroidSparkleRipple {
+                FluidRipple {
                     id: ripple
                     anchors.fill: parent
                     color: Appearance.colors.colPrimary
-                    duration: 3000
+                    duration: Config.options?.background?.effects?.ripple?.rippleDuration ?? 3000
 
                     Component.onCompleted: {
                         if (Config.options.background.effects.ripple.reload ?? true) {

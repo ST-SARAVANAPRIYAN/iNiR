@@ -487,6 +487,7 @@ Singleton {
                         property bool lock: true
                         property bool session: true
                         property bool hotcorners: true
+                        property int rippleDuration: 3000
                     }
                 }
                 property JsonObject backdrop: JsonObject {

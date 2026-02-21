@@ -423,12 +423,12 @@ Item { // Bar content region
                 }
 
                 Loader {
-                    id: lenovoLoader
-                    active: (Config.options?.bar?.modules?.lenovoConservation ?? true) && LenovoService.available
+                    id: batteryConservationLoader
+                    active: (Config.options?.bar?.modules?.lenovoConservation ?? true) && BatteryConservation.available
                     visible: active && root.useShortenedForm < 2
                     Layout.alignment: Qt.AlignVCenter
                     sourceComponent: Component {
-                        LenovoToggle {
+                        BatteryConservationToggle {
                             compact: true
                         }
                     }

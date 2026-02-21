@@ -1133,6 +1133,23 @@ ContentPage {
                             Config.setNestedValue("background.effects.ripple.session", checked);
                         }
                     }
+
+                    SettingsDivider {}
+
+                    ConfigSpinBox {
+                        icon: "schedule"
+                        text: Translation.tr("Ripple duration (ms)")
+                        value: Config.options?.background?.effects?.ripple?.rippleDuration ?? 3000
+                        from: 500
+                        to: 10000
+                        stepSize: 100
+                        onValueChanged: {
+                            Config.setNestedValue("background.effects.ripple.rippleDuration", value);
+                        }
+                        StyledToolTip {
+                            text: Translation.tr("How long the ripple animation lasts. Higher = slower.")
+                        }
+                    }
                 }
             }
 
