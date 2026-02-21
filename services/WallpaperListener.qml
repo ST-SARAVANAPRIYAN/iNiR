@@ -74,10 +74,10 @@ Singleton {
                 // For videos, return image-safe URL (consumers are Image/ColorQuantizer)
                 if (isVideoPath(p)) {
                     const ff = Wallpapers.getVideoFirstFramePath(p)
-                    if (ff) return ff.startsWith("file://") ? ff : "file://" + ff
+                    if (ff) return (ff.startsWith("file://") ? ff : "file://" + ff) + "?ff=1"
                     const expected = Wallpapers._videoThumbDir + "/" + MD5.hash(p) + ".jpg"
                     Wallpapers.ensureVideoFirstFrame(p)
-                    return "file://" + expected
+                    return "file://" + expected + "?ff=0"
                 }
                 return p.startsWith("file://") ? p : "file://" + p
             }

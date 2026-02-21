@@ -15,6 +15,8 @@ import "root:modules/common/functions/md5.js" as MD5
 Singleton {
     id: root
 
+    readonly property bool _debugWallpaperUrls: (Quickshell.env("INIR_DEBUG_WALLPAPER_URLS") ?? "") === "1"
+
     // Wallpaper path resolution for aurora/backdrop
     readonly property bool isWaffleFamily: (Config.options?.panelFamily ?? "ii") === "waffle"
     readonly property bool useBackdropWallpaper: isWaffleFamily
@@ -68,12 +70,20 @@ Singleton {
         if (root.isVideoFile(path)) {
             const _dep = root.videoFirstFrames // reactive binding
             const ff = root.videoFirstFrames[path]
-            if (ff) return ff.startsWith("file://") ? ff : "file://" + ff
+            // Cache-bust so Image(cache:true) surfaces reload when the first frame appears.
+            if (ff) return (ff.startsWith("file://") ? ff : "file://" + ff) + "?ff=1"
             const expected = root._videoThumbDir + "/" + MD5.hash(path) + ".jpg"
             root.ensureVideoFirstFrame(path)
-            return "file://" + expected
+            return "file://" + expected + "?ff=0"
         }
         return path.startsWith("file://") ? path : ("file://" + path)
+    }
+
+    onEffectiveWallpaperUrlChanged: {
+        if (root._debugWallpaperUrls) {
+            console.log("[Wallpapers] effectiveWallpaperPath=", root.effectiveWallpaperPath)
+            console.log("[Wallpapers] effectiveWallpaperUrl=", root.effectiveWallpaperUrl)
+        }
     }
 
     // ── Video first-frame system ──────────────────────────────────────────
@@ -107,8 +117,12 @@ Singleton {
         const configWp = Config.options?.background?.wallpaperPath ?? ""
         const configThumb = Config.options?.background?.thumbnailPath ?? ""
         if (configWp === videoPath && configThumb) {
-            _cacheFirstFrame(videoPath, configThumb)
-            return
+            const expected = root._videoThumbDir + "/" + MD5.hash(videoPath) + ".jpg"
+            const thumbPath = FileUtils.trimFileProtocol(configThumb)
+            if (thumbPath === expected) {
+                _cacheFirstFrame(videoPath, expected)
+                return
+            }
         }
 
         // Queue async check → generate (with dedup)
@@ -124,6 +138,10 @@ Singleton {
         const copy = Object.assign({}, root.videoFirstFrames)
         copy[videoPath] = imagePath
         root.videoFirstFrames = copy
+
+        if (root._debugWallpaperUrls) {
+            console.log("[Wallpapers] Cached first-frame:", videoPath, "->", imagePath)
+        }
     }
 
     property var _ffQueue: []
