@@ -400,21 +400,6 @@ ContentPage {
             ConfigRow {
                 uniform: true
                 SettingsSwitch {
-                    visible: BatteryConservation.available
-                    buttonIcon: "battery_saver"
-                    text: Translation.tr("Battery Conservation")
-                    checked: Config.options?.bar?.modules?.lenovoConservation ?? true
-                    onCheckedChanged: Config.setNestedValue("bar.modules.lenovoConservation", checked)
-                }
-                SettingsSwitch {
-                    visible: !BatteryConservation.available
-                    buttonIcon: "block"
-                    text: Translation.tr("Battery Conservation")
-                    enabled: false
-                    opacity: 0.5
-                    StyledToolTip { text: Translation.tr("Only available on supported laptops") }
-                }
-                SettingsSwitch {
                     buttonIcon: "cloud"
                     text: Translation.tr("Weather")
                     checked: Config.options?.bar?.modules?.weather ?? false
@@ -422,6 +407,7 @@ ContentPage {
                     enabled: Config.options?.bar?.weather?.enable ?? false
                     opacity: enabled ? 1 : 0.5
                 }
+                Item { Layout.fillWidth: true }
             }
 
             SettingsDivider {}

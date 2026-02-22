@@ -569,7 +569,6 @@ Singleton {
                     property bool rightSidebarButton: true
                     property bool sysTray: true
                     property bool weather: true
-                    property bool lenovoConservation: true
                 }
                 property JsonObject modulesPlacement: JsonObject {
                     property string resources: "start"
@@ -578,12 +577,11 @@ Singleton {
                     property string clock: "end"
                     property string utilButtons: "end"
                     property string battery: "end"
-                    property string lenovoConservation: "end"
                 }
                 property JsonObject modulesLayout: JsonObject {
                     // Global ordering of central bar modules.
                     // Valid ids: resources, media, workspaces, clock, utilButtons, battery
-                    property list<string> order: ["resources", "media", "workspaces", "clock", "utilButtons", "battery", "lenovoConservation"]
+                    property list<string> order: ["resources", "media", "workspaces", "clock", "utilButtons", "battery"]
                 }
                 property JsonObject edgeModulesLayout: JsonObject {
                     // Ordering of side modules (left and right sections)
@@ -611,7 +609,6 @@ Singleton {
                     property bool showScreenCast: false
                     property string screenCastOutput: "HDMI-A-1"
                     property bool showNotepad: true
-                    property bool showLenovoConservation: true
                 }
                 property JsonObject tray: JsonObject {
                     property bool monochromeIcons: true

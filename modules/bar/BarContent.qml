@@ -421,18 +421,6 @@ Item { // Bar content region
                     visible: (Config.options?.bar?.modules?.battery ?? true) && (root.useShortenedForm < 2 && Battery.available)
                     Layout.alignment: Qt.AlignVCenter
                 }
-
-                Loader {
-                    id: batteryConservationLoader
-                    active: (Config.options?.bar?.modules?.lenovoConservation ?? true) && BatteryConservation.available
-                    visible: active && root.useShortenedForm < 2
-                    Layout.alignment: Qt.AlignVCenter
-                    sourceComponent: Component {
-                        BatteryConservationToggle {
-                            compact: true
-                        }
-                    }
-                }
             }
         }
     }
