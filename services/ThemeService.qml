@@ -18,6 +18,25 @@ Singleton {
     readonly property bool isStandaloneSettingsWindow: (Quickshell.env("QS_NO_RELOAD_POPUP") ?? "") === "1"
     readonly property bool defaultApplyExternal: !isStandaloneSettingsWindow
     readonly property bool vesktopEnabled: (Config.options?.appearance?.wallpaperTheming?.enableVesktop ?? true) !== false
+    readonly property var wallpaperThemingCfg: Config.options?.appearance?.wallpaperTheming ?? null
+    readonly property var terminalAdjCfg: wallpaperThemingCfg?.terminalColorAdjustments ?? null
+    readonly property string liveRegenSignature: JSON.stringify({
+        theme: currentTheme,
+        enableAppsAndShell: wallpaperThemingCfg?.enableAppsAndShell ?? true,
+        enableTerminal: wallpaperThemingCfg?.enableTerminal ?? true,
+        enableVesktop: wallpaperThemingCfg?.enableVesktop ?? true,
+        enableChrome: wallpaperThemingCfg?.enableChrome ?? true,
+        enableZed: wallpaperThemingCfg?.enableZed ?? true,
+        enableVSCode: wallpaperThemingCfg?.enableVSCode ?? true,
+        useBackdropForColors: wallpaperThemingCfg?.useBackdropForColors ?? false,
+        forceTerminalDarkMode: wallpaperThemingCfg?.terminalGenerationProps?.forceDarkMode ?? false,
+        termSaturation: terminalAdjCfg?.saturation ?? 0.40,
+        termBrightness: terminalAdjCfg?.brightness ?? 0.55,
+        termHarmony: terminalAdjCfg?.harmony ?? 0.40,
+        termBackgroundBrightness: terminalAdjCfg?.backgroundBrightness ?? 0.50,
+        softenColors: Config.options?.appearance?.softenColors ?? false,
+    })
+    property string _lastLiveRegenSignature: ""
 
     onCurrentThemeChanged: {
         if (Config.ready) {
@@ -89,6 +108,34 @@ Singleton {
             // For manual presets, just re-apply with external apps
             ThemePresets.applyPreset(currentTheme, true);
         }
+    }
+
+    function _tryLiveRegenerateFromConfig(): void {
+        if (!Config.ready || !isAutoTheme) return
+        if (root.liveRegenSignature === root._lastLiveRegenSignature) return
+        root._lastLiveRegenSignature = root.liveRegenSignature
+        root.regenerateAutoTheme()
+    }
+
+    Connections {
+        target: Config
+        function onConfigChanged() {
+            liveRegenerateDebounce.restart()
+        }
+        function onReadyChanged() {
+            if (Config.ready) {
+                root._lastLiveRegenSignature = ""
+                liveRegenerateDebounce.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: liveRegenerateDebounce
+        interval: 260
+        repeat: false
+        running: false
+        onTriggered: root._tryLiveRegenerateFromConfig()
     }
 
     // Theme Scheduling

@@ -93,7 +93,7 @@ apply_terminal_configs() {
   # Single source of truth for all supported targets.
   # Mirrors TERMINAL_REGISTRY in generate_terminal_configs.py.
   # To add a new target: add it here + add generate_X_config() and registry entry in the Python script.
-  local all_supported=(kitty alacritty foot wezterm ghostty konsole starship btop lazygit yazi)
+  local all_supported=(kitty alacritty foot wezterm ghostty konsole starship omp btop lazygit yazi)
 
   # Build enabled list: config-enabled (default true) AND installed
   local enabled_terminals=()
@@ -103,7 +103,10 @@ apply_terminal_configs() {
       term_enabled=$(jq -r ".appearance.wallpaperTheming.terminals.${term} // true" "$CONFIG_FILE" 2>/dev/null || echo "true")
     fi
 
-    [[ "$term_enabled" == "true" ]] && command -v "$term" &>/dev/null && enabled_terminals+=("$term")
+    local binary_name="$term"
+    [[ "$term" == "omp" ]] && binary_name="oh-my-posh"
+
+    [[ "$term_enabled" == "true" ]] && command -v "$binary_name" &>/dev/null && enabled_terminals+=("$term")
   done
 
   if [ ${#enabled_terminals[@]} -eq 0 ]; then
@@ -196,6 +199,18 @@ reload_terminal_colors() {
           fi
         fi
         ;;
+      btop)
+        if pgrep -x btop &>/dev/null; then
+          pkill -SIGUSR2 btop 2>/dev/null && \
+            echo "[terminal-colors] btop: sent SIGUSR2 reload signal"
+        fi
+        ;;
+      omp)
+        if command -v oh-my-posh &>/dev/null; then
+          oh-my-posh enable reload &>/dev/null
+          echo "[terminal-colors] oh-my-posh: reload enabled (config will auto-reload)"
+        fi
+        ;;
     esac
   done
 }
@@ -251,30 +266,50 @@ apply_code_editors() {
     fi
   fi
 
-  # Check if VSCode is installed and enabled
+  # Check if VSCode editors are enabled
   local enable_vscode="true"
   if [ -f "$CONFIG_FILE" ]; then
     enable_vscode=$(jq -r 'if .appearance.wallpaperTheming | has("enableVSCode") then .appearance.wallpaperTheming.enableVSCode else true end' "$CONFIG_FILE" 2>/dev/null || echo "true")
   fi
 
   if [[ "$enable_vscode" == "true" ]]; then
-    # Check if any VSCode variant is installed
-    local vscode_found=false
-    [[ -d "$HOME/.config/Code" ]] && vscode_found=true
-    [[ -d "$HOME/.config/VSCodium" ]] && vscode_found=true
-    [[ -d "$HOME/.config/Cursor" ]] && vscode_found=true
+    # Build list of enabled forks from config
+    local enabled_forks=()
+    if [ -f "$CONFIG_FILE" ]; then
+      # Read individual fork settings, default to true if not specified
+      local editors_config
+      editors_config=$(jq -r '.appearance.wallpaperTheming.vscodeEditors // {}' "$CONFIG_FILE" 2>/dev/null || echo "{}")
+      
+      # Map config keys to script fork keys
+      [[ $(echo "$editors_config" | jq -r '.code // true') == "true" ]] && [[ -d "$HOME/.config/Code" ]] && enabled_forks+=("code")
+      [[ $(echo "$editors_config" | jq -r '.codium // true') == "true" ]] && [[ -d "$HOME/.config/VSCodium" ]] && enabled_forks+=("codium")
+      [[ $(echo "$editors_config" | jq -r '.codeOss // true') == "true" ]] && [[ -d "$HOME/.config/Code - OSS" ]] && enabled_forks+=("code-oss")
+      [[ $(echo "$editors_config" | jq -r '.codeInsiders // true') == "true" ]] && [[ -d "$HOME/.config/Code - Insiders" ]] && enabled_forks+=("code-insiders")
+      [[ $(echo "$editors_config" | jq -r '.cursor // true') == "true" ]] && [[ -d "$HOME/.config/Cursor" ]] && enabled_forks+=("cursor")
+      [[ $(echo "$editors_config" | jq -r '.windsurf // true') == "true" ]] && [[ -d "$HOME/.config/Windsurf" ]] && enabled_forks+=("windsurf")
+      [[ $(echo "$editors_config" | jq -r '.windsurfNext // true') == "true" ]] && [[ -d "$HOME/.config/Windsurf - Next" ]] && enabled_forks+=("windsurf-next")
+      [[ $(echo "$editors_config" | jq -r '.qoder // true') == "true" ]] && [[ -d "$HOME/.config/Qoder" ]] && enabled_forks+=("qoder")
+      [[ $(echo "$editors_config" | jq -r '.antigravity // true') == "true" ]] && [[ -d "$HOME/.config/Antigravity" ]] && enabled_forks+=("antigravity")
+      [[ $(echo "$editors_config" | jq -r '.positron // true') == "true" ]] && [[ -d "$HOME/.config/Positron" ]] && enabled_forks+=("positron")
+      [[ $(echo "$editors_config" | jq -r '.voidEditor // true') == "true" ]] && [[ -d "$HOME/.config/Void" ]] && enabled_forks+=("void")
+      [[ $(echo "$editors_config" | jq -r '.melty // true') == "true" ]] && [[ -d "$HOME/.config/Melty" ]] && enabled_forks+=("melty")
+      [[ $(echo "$editors_config" | jq -r '.pearai // true') == "true" ]] && [[ -d "$HOME/.config/PearAI" ]] && enabled_forks+=("pearai")
+      [[ $(echo "$editors_config" | jq -r '.aide // true') == "true" ]] && [[ -d "$HOME/.config/Aide" ]] && enabled_forks+=("aide")
+    fi
 
-    if [[ "$vscode_found" == "true" ]]; then
-      echo "[code-editors] Generating VSCode theme..." | tee -a "$log_file" 2>/dev/null
+    if [ ${#enabled_forks[@]} -gt 0 ]; then
+      echo "[code-editors] Generating VSCode themes for: ${enabled_forks[*]}" | tee -a "$log_file" 2>/dev/null
       "$python_cmd" "$SCRIPT_DIR/generate_terminal_configs.py" \
         --scss "$STATE_DIR/user/generated/material_colors.scss" \
-        --vscode >> "$log_file" 2>&1
+        --vscode --vscode-forks "${enabled_forks[@]}" >> "$log_file" 2>&1
 
       if [ $? -eq 0 ]; then
-        echo "[code-editors] VSCode theme generated (auto-reloads instantly)" >> "$log_file" 2>/dev/null
+        echo "[code-editors] VSCode themes generated (auto-reloads instantly)" >> "$log_file" 2>/dev/null
       else
-        echo "[code-editors] ERROR: Failed to generate VSCode theme" >> "$log_file" 2>/dev/null
+        echo "[code-editors] ERROR: Failed to generate VSCode themes" >> "$log_file" 2>/dev/null
       fi
+    else
+      echo "[code-editors] No enabled VSCode forks found" >> "$log_file" 2>/dev/null
     fi
   fi
 }

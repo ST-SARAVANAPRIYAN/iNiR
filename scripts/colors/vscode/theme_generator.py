@@ -26,32 +26,57 @@ def generate_vscode_colors(colors, scss_path):
     except FileNotFoundError:
         pass
 
-    # Extract Material You tokens
+    # Extract Material You tokens (matugen uses snake_case)
     bg = colors.get("background", colors.get("surface", "#080809"))
-    fg = colors.get("onBackground", colors.get("onSurface", "#e3dfd9"))
+    fg = colors.get("on_background", colors.get("on_surface", "#e3dfd9"))
     surface = colors.get("surface", "#080809")
+    surface_lowest = colors.get("surface_container_lowest", surface)
     surface_low = colors.get("surface_container_low", "#0c0c0e")
     surface_std = colors.get("surface_container", "#121115")
     surface_high = colors.get("surface_container_high", "#1a191d")
     surface_highest = colors.get("surface_container_highest", "#232126")
     surface_variant = colors.get("surface_variant", "#2a282e")
-    on_surface = colors.get("onSurface", "#e3dfd9")
-    on_surface_variant = colors.get("onSurfaceVariant", "#c4bfb8")
+    on_surface = colors.get("on_surface", "#e3dfd9")
+    on_surface_variant = colors.get("on_surface_variant", "#c4bfb8")
     outline = colors.get("outline", "#5c5862")
     outline_variant = colors.get("outline_variant", "#3a363e")
     
     primary = colors.get("primary", "#d4b796")
-    on_primary = colors.get("onPrimary", "#241c14")
+    on_primary = colors.get("on_primary", "#241c14")
     primary_container = colors.get("primary_container", "#33281d")
-    on_primary_container = colors.get("onPrimaryContainer", "#eddccb")
+    on_primary_container = colors.get("on_primary_container", "#eddccb")
     
     secondary = colors.get("secondary", "#ccc2b2")
     tertiary = colors.get("tertiary", "#b8cbb8")
     error = colors.get("error", "#ffb4ab")
     
-    # Terminal colors
-    term_bg = term_colors.get("term0", bg)
-    term_fg = term_colors.get("term15", fg)
+    # Terminal colors (Material-derived fallbacks; avoid legacy fixed palettes)
+    terminal_defaults = {
+        "term0": surface_lowest,
+        "term1": error,
+        "term2": tertiary,
+        "term3": secondary,
+        "term4": primary,
+        "term5": secondary,
+        "term6": tertiary,
+        "term7": on_surface,
+        "term8": outline_variant,
+        "term9": error,
+        "term10": tertiary,
+        "term11": secondary,
+        "term12": primary,
+        "term13": secondary,
+        "term14": tertiary,
+        "term15": fg,
+    }
+
+    def term(name):
+        return term_colors.get(name, terminal_defaults[name])
+
+    term_bg = term("term0")
+    term_fg = term("term15")
+
+    transparent = "#00000000"
     
     # Build VSCode color customizations
     vscode_colors = {
@@ -66,40 +91,40 @@ def generate_vscode_colors(colors, scss_path):
         "icon.foreground": on_surface,
         
         # === Window Border ===
-        "window.activeBorder": outline,
-        "window.inactiveBorder": outline_variant,
+        "window.activeBorder": transparent,
+        "window.inactiveBorder": transparent,
         
         # === Text Colors ===
         "textBlockQuote.background": surface_low,
-        "textBlockQuote.border": outline,
+        "textBlockQuote.border": transparent,
         "textCodeBlock.background": surface_low,
         "textLink.activeForeground": primary,
         "textLink.foreground": primary,
         "textPreformat.foreground": tertiary,
-        "textSeparator.foreground": outline,
+        "textSeparator.foreground": transparent,
         
-        # === Button ===
-        "button.background": primary,
-        "button.foreground": on_primary,
-        "button.hoverBackground": primary + "dd",
+        # === Button (filled) ===
+        "button.background": primary_container,
+        "button.foreground": on_primary_container,
+        "button.hoverBackground": primary_container + "dd",
         "button.secondaryBackground": surface_high,
         "button.secondaryForeground": on_surface,
         "button.secondaryHoverBackground": surface_highest,
         
         # === Checkbox ===
         "checkbox.background": surface_std,
-        "checkbox.border": outline,
+        "checkbox.border": transparent,
         "checkbox.foreground": on_surface,
         
         # === Dropdown ===
         "dropdown.background": surface_low,
-        "dropdown.border": outline,
+        "dropdown.border": transparent,
         "dropdown.foreground": on_surface,
         "dropdown.listBackground": surface_std,
         
         # === Input ===
         "input.background": surface_low,
-        "input.border": outline,
+        "input.border": transparent,
         "input.foreground": on_surface,
         "input.placeholderForeground": on_surface_variant + "80",
         "inputOption.activeBackground": primary + "40",
@@ -115,8 +140,8 @@ def generate_vscode_colors(colors, scss_path):
         "scrollbarSlider.hoverBackground": on_surface_variant + "60",
         
         # === Badge ===
-        "badge.background": primary,
-        "badge.foreground": on_primary,
+        "badge.background": primary_container,
+        "badge.foreground": on_primary_container,
         
         # === Progress Bar ===
         "progressBar.background": primary,
@@ -139,46 +164,46 @@ def generate_vscode_colors(colors, scss_path):
         "listFilterWidget.outline": primary,
         "listFilterWidget.noMatchesOutline": error,
         "list.filterMatchBackground": primary + "40",
-        "tree.indentGuidesStroke": outline_variant,
+        "tree.indentGuidesStroke": outline_variant + "40",
         
         # === Activity Bar ===
-        "activityBar.background": surface_low,
+        "activityBar.background": surface_lowest,
         "activityBar.foreground": on_surface,
         "activityBar.inactiveForeground": on_surface_variant,
-        "activityBar.border": outline_variant,
+        "activityBar.border": transparent,
         "activityBarBadge.background": primary,
         "activityBarBadge.foreground": on_primary,
         "activityBar.activeBorder": primary,
-        "activityBar.activeBackground": surface_std + "80",
+        "activityBar.activeBackground": surface_std,
         
         # === Side Bar ===
-        "sideBar.background": surface_low,
+        "sideBar.background": surface_lowest,
         "sideBar.foreground": on_surface,
-        "sideBar.border": outline_variant,
+        "sideBar.border": transparent,
         "sideBarTitle.foreground": on_surface,
-        "sideBarSectionHeader.background": surface_std,
+        "sideBarSectionHeader.background": surface_low,
         "sideBarSectionHeader.foreground": on_surface,
-        "sideBarSectionHeader.border": outline_variant,
+        "sideBarSectionHeader.border": transparent,
         
         # === Editor Groups & Tabs ===
-        "editorGroup.border": outline_variant,
+        "editorGroup.border": transparent,
         "editorGroup.dropBackground": primary + "20",
-        "editorGroupHeader.noTabsBackground": surface_low,
-        "editorGroupHeader.tabsBackground": surface_low,
-        "editorGroupHeader.tabsBorder": outline_variant,
-        "editorGroupHeader.border": outline_variant,
+        "editorGroupHeader.noTabsBackground": surface_lowest,
+        "editorGroupHeader.tabsBackground": surface_lowest,
+        "editorGroupHeader.tabsBorder": transparent,
+        "editorGroupHeader.border": transparent,
         
-        "tab.activeBackground": surface,
+        "tab.activeBackground": surface_low,
         "tab.activeForeground": on_surface,
-        "tab.border": outline_variant,
+        "tab.border": transparent,
         "tab.activeBorder": primary,
         "tab.unfocusedActiveBorder": outline,
-        "tab.inactiveBackground": surface_low,
+        "tab.inactiveBackground": surface_lowest,
         "tab.inactiveForeground": on_surface_variant,
         "tab.unfocusedActiveForeground": on_surface_variant,
         "tab.unfocusedInactiveForeground": on_surface_variant + "80",
-        "tab.hoverBackground": surface_std,
-        "tab.unfocusedHoverBackground": surface_std + "80",
+        "tab.hoverBackground": surface_low,
+        "tab.unfocusedHoverBackground": surface_low,
         "tab.hoverForeground": on_surface,
         "tab.hoverBorder": outline,
         "tab.lastPinnedBorder": outline,
@@ -186,12 +211,17 @@ def generate_vscode_colors(colors, scss_path):
         # === Editor ===
         "editor.background": bg,
         "editor.foreground": fg,
+        "editorPane.background": bg,
+        "editorGutter.background": bg,
+        "editorOverviewRuler.background": bg,
+        "editorStickyScroll.background": bg,
+        "editorStickyScrollHover.background": surface_low,
         "editorLineNumber.foreground": on_surface_variant,
         "editorLineNumber.activeForeground": on_surface,
         "editorCursor.foreground": primary,
-        "editor.selectionBackground": primary + "40",
-        "editor.inactiveSelectionBackground": primary + "20",
-        "editor.selectionHighlightBackground": primary + "30",
+        "editor.selectionBackground": primary_container + "66",
+        "editor.inactiveSelectionBackground": primary_container + "33",
+        "editor.selectionHighlightBackground": primary_container + "4d",
         "editor.wordHighlightBackground": secondary + "30",
         "editor.wordHighlightStrongBackground": secondary + "50",
         "editor.findMatchBackground": tertiary + "40",
@@ -216,6 +246,7 @@ def generate_vscode_colors(colors, scss_path):
         "diffEditor.insertedLineBackground": tertiary + "15",
         "diffEditor.removedLineBackground": error + "15",
         "diffEditor.diagonalFill": outline_variant + "80",
+        "diffEditor.border": transparent,
         
         # === Editor Widget ===
         "editorWidget.background": surface_high,
@@ -250,37 +281,38 @@ def generate_vscode_colors(colors, scss_path):
         "merge.incomingHeaderBackground": secondary + "80",
         "merge.incomingContentBackground": secondary + "20",
         "merge.border": outline,
+        "mergeEditor.background": bg,
         "editorOverviewRuler.currentContentForeground": primary,
         "editorOverviewRuler.incomingContentForeground": secondary,
         
         # === Panel ===
-        "panel.background": surface_low,
-        "panel.border": outline_variant,
+        "panel.background": surface_lowest,
+        "panel.border": transparent,
         "panelTitle.activeBorder": primary,
         "panelTitle.activeForeground": on_surface,
         "panelTitle.inactiveForeground": on_surface_variant,
         "panelInput.border": outline,
         
         # === Status Bar ===
-        "statusBar.background": surface_low,
+        "statusBar.background": surface_lowest,
         "statusBar.foreground": on_surface,
-        "statusBar.border": outline_variant,
+        "statusBar.border": transparent,
         "statusBar.debuggingBackground": error,
         "statusBar.debuggingForeground": on_primary,
-        "statusBar.noFolderBackground": surface_low,
+        "statusBar.noFolderBackground": surface_lowest,
         "statusBar.noFolderForeground": on_surface,
         "statusBarItem.activeBackground": surface_high,
         "statusBarItem.hoverBackground": surface_std,
-        "statusBarItem.prominentBackground": primary,
-        "statusBarItem.prominentForeground": on_primary,
-        "statusBarItem.prominentHoverBackground": primary + "dd",
+        "statusBarItem.prominentBackground": primary_container,
+        "statusBarItem.prominentForeground": on_primary_container,
+        "statusBarItem.prominentHoverBackground": primary_container + "dd",
         
         # === Title Bar ===
-        "titleBar.activeBackground": surface_low,
+        "titleBar.activeBackground": surface_lowest,
         "titleBar.activeForeground": on_surface,
-        "titleBar.inactiveBackground": surface_low,
+        "titleBar.inactiveBackground": surface_lowest,
         "titleBar.inactiveForeground": on_surface_variant,
-        "titleBar.border": outline_variant,
+        "titleBar.border": transparent,
         
         # === Menu Bar ===
         "menubar.selectionForeground": on_surface,
@@ -289,17 +321,17 @@ def generate_vscode_colors(colors, scss_path):
         "menu.background": surface_high,
         "menu.selectionForeground": on_surface,
         "menu.selectionBackground": surface_highest,
-        "menu.separatorBackground": outline,
-        "menu.border": outline,
+        "menu.separatorBackground": transparent,
+        "menu.border": transparent,
         
         # === Notifications ===
-        "notificationCenter.border": outline,
+        "notificationCenter.border": transparent,
         "notificationCenterHeader.foreground": on_surface,
         "notificationCenterHeader.background": surface_std,
-        "notificationToast.border": outline,
+        "notificationToast.border": transparent,
         "notifications.foreground": on_surface,
         "notifications.background": surface_high,
-        "notifications.border": outline,
+        "notifications.border": transparent,
         "notificationLink.foreground": primary,
         
         # === Extensions ===
@@ -316,22 +348,22 @@ def generate_vscode_colors(colors, scss_path):
         # === Integrated Terminal ===
         "terminal.background": term_bg,
         "terminal.foreground": term_fg,
-        "terminal.ansiBlack": term_colors.get("term0", "#000000"),
-        "terminal.ansiRed": term_colors.get("term1", "#CC241D"),
-        "terminal.ansiGreen": term_colors.get("term2", "#98971A"),
-        "terminal.ansiYellow": term_colors.get("term3", "#D79921"),
-        "terminal.ansiBlue": term_colors.get("term4", "#458588"),
-        "terminal.ansiMagenta": term_colors.get("term5", "#B16286"),
-        "terminal.ansiCyan": term_colors.get("term6", "#689D6A"),
-        "terminal.ansiWhite": term_colors.get("term7", "#A89984"),
-        "terminal.ansiBrightBlack": term_colors.get("term8", "#928374"),
-        "terminal.ansiBrightRed": term_colors.get("term9", "#FB4934"),
-        "terminal.ansiBrightGreen": term_colors.get("term10", "#B8BB26"),
-        "terminal.ansiBrightYellow": term_colors.get("term11", "#FABD2F"),
-        "terminal.ansiBrightBlue": term_colors.get("term12", "#83A598"),
-        "terminal.ansiBrightMagenta": term_colors.get("term13", "#D3869B"),
-        "terminal.ansiBrightCyan": term_colors.get("term14", "#8EC07C"),
-        "terminal.ansiBrightWhite": term_colors.get("term15", "#EBDBB2"),
+        "terminal.ansiBlack": term("term0"),
+        "terminal.ansiRed": term("term1"),
+        "terminal.ansiGreen": term("term2"),
+        "terminal.ansiYellow": term("term3"),
+        "terminal.ansiBlue": term("term4"),
+        "terminal.ansiMagenta": term("term5"),
+        "terminal.ansiCyan": term("term6"),
+        "terminal.ansiWhite": term("term7"),
+        "terminal.ansiBrightBlack": term("term8"),
+        "terminal.ansiBrightRed": term("term9"),
+        "terminal.ansiBrightGreen": term("term10"),
+        "terminal.ansiBrightYellow": term("term11"),
+        "terminal.ansiBrightBlue": term("term12"),
+        "terminal.ansiBrightMagenta": term("term13"),
+        "terminal.ansiBrightCyan": term("term14"),
+        "terminal.ansiBrightWhite": term("term15"),
         "terminal.selectionBackground": primary + "40",
         "terminalCursor.background": bg,
         "terminalCursor.foreground": primary,
@@ -414,6 +446,14 @@ def generate_vscode_colors(colors, scss_path):
         "symbolIcon.typeParameterForeground": secondary,
         "symbolIcon.unitForeground": tertiary,
         "symbolIcon.variableForeground": on_surface,
+
+        # === Notebooks (Jupyter) ===
+        "notebook.editorBackground": bg,
+        "notebook.cellEditorBackground": bg,
+        "notebook.cellBorderColor": transparent,
+        "notebook.cellToolbarSeparator": transparent,
+        "notebook.focusedCellBackground": bg,
+        "notebookStatusRunningIcon.foreground": primary,
     }
     
     return vscode_colors
@@ -426,8 +466,8 @@ def generate_vscode_syntax(colors, term_colors):
     secondary = colors.get("secondary", "#ccc2b2")
     tertiary = colors.get("tertiary", "#b8cbb8")
     error = colors.get("error", "#ffb4ab")
-    on_surface = colors.get("onSurface", "#e3dfd9")
-    on_surface_variant = colors.get("onSurfaceVariant", "#c4bfb8")
+    on_surface = colors.get("on_surface", "#e3dfd9")
+    on_surface_variant = colors.get("on_surface_variant", "#c4bfb8")
     
     # Syntax highlighting rules (TextMate scopes)
     syntax_rules = [
@@ -490,7 +530,43 @@ def generate_vscode_syntax(colors, term_colors):
     return syntax_rules
 
 
-def merge_settings_json(settings_path, color_customizations, token_customizations):
+def generate_vscode_semantic_tokens(colors):
+    """Generate VSCode semantic token rules to keep syntax contrast strong."""
+
+    primary = colors.get("primary", "#d4b796")
+    secondary = colors.get("secondary", "#ccc2b2")
+    tertiary = colors.get("tertiary", "#b8cbb8")
+    error = colors.get("error", "#ffb4ab")
+    on_surface = colors.get("on_surface", "#e3dfd9")
+    on_surface_variant = colors.get("on_surface_variant", "#c4bfb8")
+
+    return {
+        "class": primary,
+        "enum": secondary,
+        "enumMember": tertiary,
+        "function": primary,
+        "method": primary,
+        "interface": secondary,
+        "namespace": secondary,
+        "parameter": on_surface,
+        "property": secondary,
+        "struct": secondary,
+        "type": secondary,
+        "typeParameter": tertiary,
+        "variable": on_surface,
+        "variable.constant": tertiary,
+        "variable.defaultLibrary": error,
+        "comment": on_surface_variant + "cc",
+        "keyword": secondary,
+        "keyword.control": secondary,
+        "number": tertiary,
+        "string": tertiary,
+        "regexp": tertiary,
+        "operator": secondary,
+    }
+
+
+def merge_settings_json(settings_path, color_customizations, token_customizations, semantic_tokens):
     """Intelligently merge color customizations into existing settings.json."""
     
     settings_path = Path(settings_path)
@@ -512,6 +588,10 @@ def merge_settings_json(settings_path, color_customizations, token_customization
     # Merge color customizations (replace entirely to ensure consistency)
     settings["workbench.colorCustomizations"] = color_customizations
     settings["editor.tokenColorCustomizations"] = {"textMateRules": token_customizations}
+    settings["editor.semanticTokenColorCustomizations"] = {
+        "enabled": True,
+        "rules": semantic_tokens,
+    }
     
     # Write back with pretty formatting
     with open(settings_path, "w") as f:
@@ -546,9 +626,15 @@ def generate_vscode_theme(colors_json_path, scss_path, settings_path):
     # Generate color customizations
     color_customizations = generate_vscode_colors(colors, scss_path)
     syntax_customizations = generate_vscode_syntax(colors, term_colors)
-    
+    semantic_customizations = generate_vscode_semantic_tokens(colors)
+
     # Merge into settings.json
-    success = merge_settings_json(settings_path, color_customizations, syntax_customizations)
+    success = merge_settings_json(
+        settings_path,
+        color_customizations,
+        syntax_customizations,
+        semantic_customizations,
+    )
     
     if success:
         print("✓ Generated VSCode theme (auto-reloads instantly)")
@@ -558,15 +644,94 @@ def generate_vscode_theme(colors_json_path, scss_path, settings_path):
         return False
 
 
+# All known VSCode forks and their config paths
+VSCODE_FORKS = {
+    "code": "Code",                      # Official VSCode
+    "codium": "VSCodium",                # VSCodium (FOSS build)
+    "code-oss": "Code - OSS",            # Arch/community OSS build
+    "code-insiders": "Code - Insiders",  # Insiders preview
+    "cursor": "Cursor",                  # Cursor AI editor
+    "windsurf": "Windsurf",              # Windsurf AI editor
+    "windsurf-next": "Windsurf - Next",  # Windsurf preview
+    "qoder": "Qoder",                    # Qoder editor
+    "antigravity": "Antigravity",        # Antigravity editor
+    "positron": "Positron",              # Posit's data science IDE
+    "void": "Void",                      # Void editor
+    "melty": "Melty",                    # Melty editor
+    "pearai": "PearAI",                  # PearAI editor
+    "aide": "Aide",                      # Aide editor
+}
+
+
+def get_settings_path(fork_name: str) -> Path:
+    """Get the settings.json path for a VSCode fork."""
+    config_dir = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    return Path(config_dir) / fork_name / "User" / "settings.json"
+
+
+def generate_all_vscode_themes(colors_json_path: str, scss_path: str, forks: list = None):
+    """Generate themes for multiple VSCode forks.
+    
+    Args:
+        colors_json_path: Path to Material You colors.json
+        scss_path: Path to material_colors.scss
+        forks: List of fork keys to generate for (None = all installed)
+    """
+    if forks is None:
+        # Auto-detect installed forks
+        forks = [key for key, name in VSCODE_FORKS.items() 
+                 if get_settings_path(name).parent.exists()]
+    
+    results = {}
+    for fork_key in forks:
+        fork_name = VSCODE_FORKS.get(fork_key)
+        if not fork_name:
+            print(f"Unknown fork: {fork_key}", file=sys.stderr)
+            continue
+        
+        settings_path = get_settings_path(fork_name)
+        if not settings_path.parent.exists():
+            continue
+        
+        success = generate_vscode_theme(colors_json_path, scss_path, str(settings_path))
+        results[fork_key] = success
+        if success:
+            print(f"  ✓ {fork_name}")
+        else:
+            print(f"  ✗ {fork_name}", file=sys.stderr)
+    
+    return results
+
+
 if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Generate VSCode theme from Material You colors")
     parser.add_argument("--colors", type=str, default=os.path.expanduser("~/.local/state/quickshell/user/generated/colors.json"))
     parser.add_argument("--scss", type=str, default=os.path.expanduser("~/.local/state/quickshell/user/generated/material_colors.scss"))
-    parser.add_argument("--output", type=str, default=os.path.expanduser("~/.config/Code/User/settings.json"))
+    parser.add_argument("--output", type=str, default=None, help="Single output path (legacy mode)")
+    parser.add_argument("--forks", type=str, nargs="*", default=None,
+                        help=f"Forks to generate for. Options: {', '.join(VSCODE_FORKS.keys())}. Default: all installed")
+    parser.add_argument("--list-forks", action="store_true", help="List all known forks and exit")
     
     args = parser.parse_args()
     
-    success = generate_vscode_theme(args.colors, args.scss, args.output)
-    sys.exit(0 if success else 1)
+    if args.list_forks:
+        print("Known VSCode forks:")
+        for key, name in VSCODE_FORKS.items():
+            path = get_settings_path(name)
+            installed = "✓" if path.parent.exists() else "✗"
+            print(f"  [{installed}] {key}: {name} ({path})")
+        sys.exit(0)
+    
+    if args.output:
+        # Legacy single-output mode
+        success = generate_vscode_theme(args.colors, args.scss, args.output)
+        sys.exit(0 if success else 1)
+    else:
+        # Multi-fork mode
+        results = generate_all_vscode_themes(args.colors, args.scss, args.forks)
+        success_count = sum(1 for v in results.values() if v)
+        total = len(results)
+        print(f"Generated themes for {success_count}/{total} forks")
+        sys.exit(0 if success_count > 0 else 1)
