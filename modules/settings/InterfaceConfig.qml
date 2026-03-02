@@ -157,6 +157,98 @@ ContentPage {
 
     SettingsCardSection {
         expanded: false
+        icon: "screen_record"
+        title: Translation.tr("Screen recording")
+
+        SettingsGroup {
+            StyledText {
+                Layout.fillWidth: true
+                text: Translation.tr("These settings apply to all shell recording entrypoints (overlay, bar button, and region recorder).")
+                color: Appearance.colors.colSubtext
+                font.pixelSize: Appearance.font.pixelSize.small
+                wrapMode: Text.WordWrap
+            }
+
+            ConfigRow {
+                uniform: true
+                MaterialTextField {
+                    Layout.fillWidth: true
+                    placeholderText: Translation.tr("Video codec (e.g. libx264, h264_vaapi)")
+                    text: Config.options?.screenRecord?.videoCodec ?? "libx264"
+                    onTextChanged: Config.setNestedValue("screenRecord.videoCodec", text)
+                }
+                MaterialTextField {
+                    Layout.fillWidth: true
+                    placeholderText: Translation.tr("Audio codec (e.g. aac, opus)")
+                    text: Config.options?.screenRecord?.audioCodec ?? "aac"
+                    onTextChanged: Config.setNestedValue("screenRecord.audioCodec", text)
+                }
+            }
+
+            ConfigRow {
+                uniform: true
+                MaterialTextField {
+                    Layout.fillWidth: true
+                    placeholderText: Translation.tr("Preset (e.g. veryfast)")
+                    text: Config.options?.screenRecord?.preset ?? "veryfast"
+                    onTextChanged: Config.setNestedValue("screenRecord.preset", text)
+                }
+                MaterialTextField {
+                    Layout.fillWidth: true
+                    placeholderText: Translation.tr("Pixel format (e.g. yuv420p)")
+                    text: Config.options?.screenRecord?.pixelFormat ?? "yuv420p"
+                    onTextChanged: Config.setNestedValue("screenRecord.pixelFormat", text)
+                }
+            }
+
+            ConfigRow {
+                uniform: true
+                ConfigSpinBox {
+                    icon: "speed"
+                    text: Translation.tr("FPS")
+                    value: Config.options?.screenRecord?.fps ?? 60
+                    from: 24
+                    to: 120
+                    stepSize: 1
+                    onValueChanged: Config.setNestedValue("screenRecord.fps", value)
+                }
+                ConfigSpinBox {
+                    icon: "tune"
+                    text: Translation.tr("CRF")
+                    value: Config.options?.screenRecord?.crf ?? 21
+                    from: 15
+                    to: 35
+                    stepSize: 1
+                    onValueChanged: Config.setNestedValue("screenRecord.crf", value)
+                }
+            }
+
+            ConfigRow {
+                uniform: true
+                ConfigSpinBox {
+                    icon: "videocam"
+                    text: Translation.tr("Video bitrate (kbps)")
+                    value: Config.options?.screenRecord?.videoBitrateKbps ?? 12000
+                    from: 2000
+                    to: 50000
+                    stepSize: 500
+                    onValueChanged: Config.setNestedValue("screenRecord.videoBitrateKbps", value)
+                }
+                ConfigSpinBox {
+                    icon: "music_note"
+                    text: Translation.tr("Audio bitrate (kbps)")
+                    value: Config.options?.screenRecord?.audioBitrateKbps ?? 192
+                    from: 96
+                    to: 512
+                    stepSize: 16
+                    onValueChanged: Config.setNestedValue("screenRecord.audioBitrateKbps", value)
+                }
+            }
+        }
+    }
+
+    SettingsCardSection {
+        expanded: false
         icon: "forum"
         title: Translation.tr("Overlay: Discord")
 
