@@ -128,6 +128,23 @@ Scope {
                 }
             }
 
+            // Generate thumbnails when opening (must be inside PanelWindow scope
+            // so coverflowContent is a valid id at runtime)
+            Connections {
+                target: GlobalStates
+                function onCoverflowSelectorOpenChanged() {
+                    if (GlobalStates.coverflowSelectorOpen) {
+                        const wp = Wallpapers.effectiveWallpaperPath
+                        const wpDir = FileUtils.parentDirectory(FileUtils.trimFileProtocol(String(wp)))
+                        if (wpDir && wpDir.length > 0) {
+                            Wallpapers.setDirectory(wpDir)
+                        }
+                        Wallpapers.searchQuery = ""
+                        coverflowContent.updateThumbnails()
+                    }
+                }
+            }
+
             // Click outside to close (Hyprland)
             CompositorFocusGrab {
                 id: grab
@@ -139,22 +156,6 @@ Scope {
                         GlobalStates.coverflowSelectorOpen = false
                     }
                 }
-            }
-        }
-    }
-
-    // Generate thumbnails when opening
-    Connections {
-        target: GlobalStates
-        function onCoverflowSelectorOpenChanged() {
-            if (GlobalStates.coverflowSelectorOpen) {
-                const wp = Wallpapers.effectiveWallpaperPath
-                const wpDir = FileUtils.parentDirectory(FileUtils.trimFileProtocol(String(wp)))
-                if (wpDir && wpDir.length > 0) {
-                    Wallpapers.setDirectory(wpDir)
-                }
-                Wallpapers.searchQuery = ""
-                coverflowContent.updateThumbnails()
             }
         }
     }

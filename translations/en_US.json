@@ -170,7 +170,6 @@
   "Neutral": "Neutral",
   "12h AM/PM": "12h AM/PM",
   "Number show delay when pressing Super (ms)": "Number show delay when pressing Super (ms)",
-  "Fill": "Fill",
   "Always show numbers": "Always show numbers",
   "Dot": "Dot",
   "Provider set to": "Provider set to",
@@ -1248,4 +1247,5 @@
   "The old wallpaper blurs away while the new one appears": "The old wallpaper blurs away while the new one appears",
   "Transition duration (ms)": "Transition duration (ms)",
   "How long the transition animation takes in milliseconds. Lower values feel snappy, higher values feel cinematic.": "How long the transition animation takes in milliseconds. Lower values feel snappy, higher values feel cinematic."
-}
+ }
+ 
