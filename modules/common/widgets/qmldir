@@ -36,6 +36,7 @@ FadeLoader 1.0 FadeLoader.qml
 Favicon 1.0 Favicon.qml
 FloatingActionButton 1.0 FloatingActionButton.qml
 FlowButtonGroup 1.0 FlowButtonGroup.qml
+FluidRipple 1.0 FluidRipple.qml
 FocusedScrollMouseArea 1.0 FocusedScrollMouseArea.qml
 FontSelector 1.0 FontSelector.qml
 FullscreenPolkitWindow 1.0 FullscreenPolkitWindow.qml
