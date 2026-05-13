@@ -26,7 +26,8 @@ AbstractBackgroundWidget {
 
     implicitHeight: contentColumn.implicitHeight
     implicitWidth: contentColumn.implicitWidth
-    resizableAxes: ({ uniform: "widgetScale" })
+    // Digital mode resizes via timeScale, cookie via cookie.size — avoids scaleFactor churn
+    resizableAxes: root.clockStyle === "cookie" ? ({ uniform: "cookie.size" }) : ({ uniform: "timeScale" })
     resizeMinWidth: 80
     resizeMinHeight: 40
 

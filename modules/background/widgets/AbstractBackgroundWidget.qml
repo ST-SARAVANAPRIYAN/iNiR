@@ -21,7 +21,16 @@ AbstractWidget {
     required property real wallpaperScale
     property bool visibleWhenLocked: false
     property int widgetIndex: 0 // used to offset auto-placed widgets so they don't stack
-    property var configEntry: Config.options?.background?.widgets?.[configEntryName] ?? {}
+    // Supports nested configEntryName like "custom.my-widget" → widgets.custom["my-widget"]
+    property var configEntry: {
+        const parts = configEntryName.split(".");
+        let obj = Config.options?.background?.widgets;
+        for (let i = 0; i < parts.length; i++) {
+            if (obj == null) return {};
+            obj = obj[parts[i]];
+        }
+        return obj ?? {};
+    }
     // Disable base class x/y behaviors — we define our own with _autoPosition gating
     animateXPos: false
     animateYPos: false
@@ -233,7 +242,7 @@ AbstractWidget {
     }
 
     // ── Edit mode toolbar (proper Material action bar) ─────────
-    // Counter-scaled so toolbar stays crisp regardless of widget scaleFactor
+    // Toolbar is in screen-pixel space (no Item.scale on widget)
     Item {
         id: editToolbar
         z: 200
@@ -242,17 +251,10 @@ AbstractWidget {
         anchors {
             horizontalCenter: parent.horizontalCenter
             bottom: parent.top
-            bottomMargin: 12 / root.scaleFactor
+            bottomMargin: 12
         }
         width: toolbarRow.implicitWidth + 12
         height: 36
-        // Scale from bottom edge so counter-scaling pushes toolbar up, not into widget
-        transform: Scale {
-            origin.x: editToolbar.width / 2
-            origin.y: editToolbar.height
-            xScale: 1.0 / root.scaleFactor
-            yScale: 1.0 / root.scaleFactor
-        }
 
         Behavior on opacity {
             enabled: Appearance.animationsEnabled
@@ -427,13 +429,6 @@ AbstractWidget {
         border { width: 1; color: ColorUtils.applyAlpha(Appearance.colors.colOnPrimary, 0.3) }
         opacity: rhArea.containsMouse || rhArea.pressed ? 1.0 : 0.7
 
-        transform: Scale {
-            origin.x: rh.width / 2
-            origin.y: rh.height / 2
-            xScale: 1.0 / root.scaleFactor
-            yScale: 1.0 / root.scaleFactor
-        }
-
         // Track drag start state in canvas-space to avoid feedback loops
         property real _startWidth: 0
         property real _startHeight: 0
@@ -468,11 +463,10 @@ AbstractWidget {
                 rh._canvasStartY = mapped.y;
                 // Capture config values at drag start for ratio calculation
                 const axes = root.resizableAxes;
-                const ce = root.configEntry;
                 let vals = {};
-                if (axes.uniform) vals.uniform = Number(ce?.[axes.uniform] ?? 100);
-                if (axes.width) vals.width = Number(ce?.[axes.width] ?? Math.round(root.width / root.scaleFactor));
-                if (axes.height) vals.height = Number(ce?.[axes.height] ?? Math.round(root.height / root.scaleFactor));
+                if (axes.uniform) vals.uniform = Number(root._readConfigKey(axes.uniform) ?? 100);
+                if (axes.width) vals.width = Number(root._readConfigKey(axes.width) ?? Math.round(root.width / root.scaleFactor));
+                if (axes.height) vals.height = Number(root._readConfigKey(axes.height) ?? Math.round(root.height / root.scaleFactor));
                 rh._startConfigVals = vals;
                 root._isResizing = true;
             }
@@ -612,6 +606,17 @@ AbstractWidget {
     property int resizeMinHeight: 40
     property int resizeMaxWidth: 1200
     property int resizeMaxHeight: 800
+
+    // Read a possibly-nested key from configEntry (e.g. "cookie.size" → configEntry.cookie.size)
+    function _readConfigKey(key: string): var {
+        const parts = key.split(".");
+        let obj = root.configEntry;
+        for (let i = 0; i < parts.length; i++) {
+            if (obj == null) return undefined;
+            obj = obj[parts[i]];
+        }
+        return obj;
+    }
 
     // Override in subclasses with widget-specific default values
     property var defaultConfig: ({})

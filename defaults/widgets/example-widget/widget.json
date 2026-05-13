@@ -1,12 +1,16 @@
 {
-    "name": "Example Widget",
-    "icon": "widgets",
+    "name": "Quick Glance",
+    "icon": "dashboard",
     "version": "1.0",
     "author": "inir",
     "main": "ExampleWidget.qml",
     "configKeys": {
-        "message": { "type": "string", "default": "Hello, World!", "label": "Message" }
+        "showTime": { "type": "bool", "default": true, "label": "Show time" },
+        "showWeather": { "type": "bool", "default": true, "label": "Show weather" },
+        "showBattery": { "type": "bool", "default": true, "label": "Show battery" },
+        "showNetwork": { "type": "bool", "default": true, "label": "Show network" },
+        "showVolume": { "type": "bool", "default": true, "label": "Show volume" }
     },
-    "resizableAxes": {},
-    "defaultSize": { "width": 200, "height": 60 }
+    "resizableAxes": { "uniform": "widgetScale" },
+    "defaultSize": { "width": 400, "height": 40 }
 }

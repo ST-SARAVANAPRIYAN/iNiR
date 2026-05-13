@@ -139,7 +139,7 @@ Singleton {
         }
     }
 
-    // Widget template generator
+    // Widget template generator — creates scaffold with all imports, services, and patterns
     Process {
         id: _createProcess
         property string widgetName: ""
@@ -156,39 +156,114 @@ Singleton {
     "author": "",
     "main": "${_createProcess._pascalName}.qml",
     "configKeys": {
-        "message": { "type": "string", "default": "Hello!", "label": "Message" }
+        "label": { "type": "string", "default": "${_createProcess._pascalName}", "label": "Widget label" },
+        "showIcon": { "type": "bool", "default": true, "label": "Show icon" }
     },
-    "resizableAxes": {},
-    "defaultSize": { "width": 200, "height": 100 }
+    "resizableAxes": { "uniform": "widgetScale" },
+    "defaultSize": { "width": 200, "height": 80 }
 }
 MANIFEST
             cat > "$dir/${_createProcess._pascalName}.qml" << 'QML'
+// ${_createProcess._pascalName} — custom iNiR desktop widget
+// Full SDK reference: defaults/widgets/WIDGET-SDK.md
+// Example widget: defaults/widgets/example-widget/
+
 import QtQuick
-import qs.modules.common
-import qs.modules.common.widgets
-import qs.modules.common.functions
-import qs.modules.background.widgets
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
+import qs
+import qs.services              // Audio, Battery, DateTime, Network, Weather, ResourceUsage, MprisController, Notifications
+import qs.modules.common        // Config, Appearance, Directories, GlobalStates
+import qs.modules.common.functions // ColorUtils, StringUtils, DateUtils, FileUtils
+import qs.modules.common.widgets   // 130+ components (StyledText, MaterialSymbol, RippleButton, CircularProgress, Graph, CavaVisualizer...)
+import qs.modules.background.widgets // AbstractBackgroundWidget base class
 
 AbstractBackgroundWidget {
     id: root
-    configEntryName: "custom.${_createProcess.widgetName}"
-    defaultConfig: ({ placementStrategy: "free", widgetScale: 100, widgetOpacity: 100, colorMode: "auto", x: 200, y: 200 })
-    implicitWidth: Math.round(200 * scaleFactor)
-    implicitHeight: Math.round(100 * scaleFactor)
 
+    configEntryName: "custom.${_createProcess.widgetName}"
+    defaultConfig: ({
+        placementStrategy: "free", widgetScale: 100, widgetOpacity: 100,
+        colorMode: "auto", dim: 0, x: 200, y: 200
+    })
+
+    implicitWidth: content.implicitWidth + Math.round(16 * scaleFactor)
+    implicitHeight: content.implicitHeight + Math.round(16 * scaleFactor)
+    resizableAxes: ({ uniform: "widgetScale" })
+    resizeMinWidth: 80
+    resizeMinHeight: 40
+
+    // Read your widget's config keys with null-safe access:
+    //   _readConfigKey("label") ?? "fallback"
+    // Write config:
+    //   Config.setNestedValue("background.widgets.custom.${_createProcess.widgetName}.label", value)
+
+    // Card background using inherited appearance controls
     Rectangle {
         anchors.fill: parent
-        radius: Appearance.rounding.normal
-        color: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, root.backgroundOpacity > 0 ? root.backgroundOpacity : 0.6)
-        border { width: root.borderWidth; color: ColorUtils.applyAlpha(Appearance.colors.colOnPrimaryContainer, root.borderOpacity) }
+        radius: root.cornerRadiusOverride >= 0 ? root.cornerRadiusOverride : Appearance.rounding.normal
+        color: root.backgroundOpacity > 0 ? ColorUtils.applyAlpha(root.colText, root.backgroundOpacity) : "transparent"
+        border { width: root.borderWidth; color: ColorUtils.applyAlpha(root.colText, root.borderOpacity) }
+    }
 
+    Column {
+        id: content
+        anchors.centerIn: parent
+        spacing: Math.round(6 * root.scaleFactor)
+
+        Row {
+            spacing: Math.round(6 * root.scaleFactor)
+            anchors.horizontalCenter: parent.horizontalCenter
+            MaterialSymbol {
+                text: "schedule"
+                iconSize: Math.round(20 * root.scaleFactor)
+                color: root.colText
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            StyledText {
+                text: DateTime.time
+                font {
+                    pixelSize: Math.round(Appearance.font.pixelSize.large * root.scaleFactor)
+                    family: Appearance.font.family.numbers
+                }
+                color: root.colText
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
         StyledText {
-            anchors.centerIn: parent
-            text: "Your widget here"
-            color: Appearance.colors.colOnPrimaryContainer
-            font.pixelSize: Math.round(Appearance.font.pixelSize.normal * root.scaleFactor)
+            text: root._readConfigKey("label") ?? "${_createProcess._pascalName}"
+            font.pixelSize: Math.round(Appearance.font.pixelSize.small * root.scaleFactor)
+            color: ColorUtils.applyAlpha(root.colText, 0.6)
+            anchors.horizontalCenter: parent.horizontalCenter
         }
     }
+
+    // Available services (all reactive, auto-update):
+    //   DateTime.time, DateTime.date, DateTime.uptime
+    //   Weather.data.temp, Weather.data.description, Weather.enabled
+    //   Battery.percentage (0-1), Battery.isCharging, Battery.available
+    //   Audio.value (0-2.0), Audio.sink?.audio?.muted, Audio.ready
+    //   Network.wifi, Network.networkName, Network.networkStrength (0-100)
+    //   ResourceUsage.cpuUsage (0-1), ResourceUsage.memoryUsedPercentage (call ensureRunning() first)
+    //   MprisController.activePlayer?.trackTitle, MprisController.displayPlayers
+    //   Notifications.unread, Notifications.list
+
+    // Available components (import qs.modules.common.widgets):
+    //   Text:     StyledText, MaterialSymbol (icon font — "wifi", "battery_full", "volume_up", etc)
+    //   Buttons:  RippleButton, FloatingActionButton, MenuButton, GroupButton
+    //   Progress: CircularProgress, StyledProgressBar, Graph (line chart)
+    //   Input:    StyledSlider, StyledSpinBox, StyledSwitch, MaterialTextField
+    //   Layout:   FadeLoader (animated show/hide), CollapsibleSection, Revealer
+    //   Shapes:   MaterialShape, Circle, GlassBackground
+    //   Audio:    CavaVisualizer (spectrum), CavaProcess, WaveVisualizer
+    //   Effects:  StyledDropShadow, StyledRectangularShadow, StyledBlurEffect
+
+    // Theming — always use tokens, never hardcode:
+    //   Colors:   Appearance.colors.colPrimary, .colOnLayer0, .colError, .colSecondaryContainer
+    //   Fonts:    Appearance.font.pixelSize.{small,normal,large,huge}, .family.{main,numbers,monospace}
+    //   Rounding: Appearance.rounding.{small,normal,large,full}
+    //   root.colText adapts to wallpaper brightness automatically
 }
 QML
             echo "done"

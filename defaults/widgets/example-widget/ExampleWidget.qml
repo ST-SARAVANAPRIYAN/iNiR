@@ -1,7 +1,16 @@
+pragma ComponentBehavior: Bound
+// Quick Glance — example widget showing how to use iNiR's services and components.
+// Copy this to ~/.config/inir/widgets/example-widget/ to use it.
+// Full SDK docs: defaults/widgets/WIDGET-SDK.md
+
 import QtQuick
+import QtQuick.Layouts
+import Quickshell
+import qs
+import qs.services
 import qs.modules.common
-import qs.modules.common.widgets
 import qs.modules.common.functions
+import qs.modules.common.widgets
 import qs.modules.background.widgets
 
 AbstractBackgroundWidget {
@@ -11,23 +20,157 @@ AbstractBackgroundWidget {
     defaultConfig: ({
         placementStrategy: "free",
         widgetScale: 100, widgetOpacity: 100, colorMode: "auto", dim: 0,
+        showTime: true, showWeather: true, showBattery: true,
+        showNetwork: true, showVolume: true,
         x: 300, y: 300
     })
 
-    implicitWidth: Math.round(200 * scaleFactor)
-    implicitHeight: Math.round(60 * scaleFactor)
+    implicitWidth: contentRow.implicitWidth + pad * 2
+    implicitHeight: contentRow.implicitHeight + pad * 2
+    resizableAxes: ({ uniform: "widgetScale" })
+    resizeMinWidth: 120
+    resizeMinHeight: 36
 
+    readonly property int pad: Math.round(10 * scaleFactor)
+    readonly property real ico: Math.round(16 * scaleFactor)
+    readonly property real fs: Math.round(Appearance.font.pixelSize.small * scaleFactor)
+
+    // Read config values (null-safe, with fallbacks)
+    readonly property bool cfgTime: _readConfigKey("showTime") ?? true
+    readonly property bool cfgWeather: _readConfigKey("showWeather") ?? true
+    readonly property bool cfgBattery: _readConfigKey("showBattery") ?? true
+    readonly property bool cfgNetwork: _readConfigKey("showNetwork") ?? true
+    readonly property bool cfgVolume: _readConfigKey("showVolume") ?? true
+
+    // Edit mode quick controls — toggle each section
+    editPopoverContent: Component {
+        Item {
+            implicitWidth: _col.implicitWidth
+            implicitHeight: _col.implicitHeight
+            Column {
+                id: _col
+                spacing: 4
+                Repeater {
+                    model: [
+                        { label: "Time", key: "showTime", on: root.cfgTime },
+                        { label: "Weather", key: "showWeather", on: root.cfgWeather },
+                        { label: "Battery", key: "showBattery", on: root.cfgBattery },
+                        { label: "Network", key: "showNetwork", on: root.cfgNetwork },
+                        { label: "Volume", key: "showVolume", on: root.cfgVolume }
+                    ]
+                    RippleButton {
+                        required property var modelData
+                        width: 100; height: 28
+                        buttonRadius: Appearance.rounding.small
+                        toggled: modelData.on
+                        colBackground: toggled ? ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.16) : "transparent"
+                        colBackgroundHover: ColorUtils.applyAlpha(Appearance.colors.colOnLayer2, 0.08)
+                        colRipple: ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.12)
+                        downAction: () => Config.setNestedValue(
+                            "background.widgets.custom.example-widget." + modelData.key, !modelData.on)
+                        contentItem: StyledText {
+                            anchors.centerIn: parent
+                            text: modelData.label
+                            color: Appearance.colors.colOnLayer2
+                            font.pixelSize: Appearance.font.pixelSize.small
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Card background — uses inherited card control properties
     Rectangle {
         anchors.fill: parent
-        radius: Appearance.rounding.normal
-        color: ColorUtils.applyAlpha(Appearance.colors.colPrimaryContainer, 0.6)
-        border { width: 1; color: ColorUtils.applyAlpha(Appearance.colors.colOnPrimaryContainer, 0.1) }
+        radius: root.cornerRadiusOverride >= 0 ? root.cornerRadiusOverride : Appearance.rounding.small
+        color: root.backgroundOpacity > 0 ? ColorUtils.applyAlpha(root.colText, root.backgroundOpacity) : "transparent"
+        border { width: root.borderWidth; color: ColorUtils.applyAlpha(root.colText, root.borderOpacity) }
+    }
 
-        StyledText {
-            anchors.centerIn: parent
-            text: "Hello from custom widget!"
-            color: Appearance.colors.colOnPrimaryContainer
-            font.pixelSize: Math.round(Appearance.font.pixelSize.normal * root.scaleFactor)
+    Row {
+        id: contentRow
+        anchors.centerIn: parent
+        spacing: Math.round(10 * root.scaleFactor)
+
+        // Time — uses DateTime service
+        Row {
+            visible: root.cfgTime
+            spacing: Math.round(4 * root.scaleFactor)
+            anchors.verticalCenter: parent.verticalCenter
+            MaterialSymbol { text: "schedule"; iconSize: root.ico; color: root.colText; anchors.verticalCenter: parent.verticalCenter }
+            StyledText {
+                text: DateTime.time
+                font { pixelSize: root.fs; family: Appearance.font.family.numbers }
+                color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        // Weather — uses Weather service (only shows when data is available)
+        Row {
+            visible: root.cfgWeather && Weather.enabled && Weather.data.temp !== undefined
+            spacing: Math.round(4 * root.scaleFactor)
+            anchors.verticalCenter: parent.verticalCenter
+            MaterialSymbol {
+                text: Weather.isNightNow() ? "nights_stay" : "wb_sunny"
+                iconSize: root.ico; color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
+            StyledText {
+                text: (Weather.data.temp ?? "--") + (Weather.useUSCS ? "\u00b0F" : "\u00b0C")
+                font.pixelSize: root.fs; color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        // Battery — uses Battery service (only shows on laptops)
+        Row {
+            visible: root.cfgBattery && Battery.available
+            spacing: Math.round(4 * root.scaleFactor)
+            anchors.verticalCenter: parent.verticalCenter
+            MaterialSymbol {
+                text: Battery.isCharging ? "battery_charging_full"
+                    : Battery.percentage > 0.8 ? "battery_full"
+                    : Battery.percentage > 0.5 ? "battery_3_bar"
+                    : Battery.percentage > 0.2 ? "battery_2_bar" : "battery_alert"
+                iconSize: root.ico
+                color: Battery.isCritical ? Appearance.colors.colError : root.colText
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            StyledText {
+                text: Math.round(Battery.percentage * 100) + "%"
+                font { pixelSize: root.fs; family: Appearance.font.family.numbers }
+                color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        // Network status — uses Network service
+        Row {
+            visible: root.cfgNetwork
+            spacing: Math.round(4 * root.scaleFactor)
+            anchors.verticalCenter: parent.verticalCenter
+            MaterialSymbol { text: Network.materialSymbol; iconSize: root.ico; color: root.colText; anchors.verticalCenter: parent.verticalCenter }
+            StyledText {
+                visible: Network.wifi
+                text: Network.networkName || "WiFi"
+                font.pixelSize: root.fs; color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        // Volume — uses Audio service
+        Row {
+            visible: root.cfgVolume && Audio.ready
+            spacing: Math.round(4 * root.scaleFactor)
+            anchors.verticalCenter: parent.verticalCenter
+            MaterialSymbol {
+                text: Audio.sink?.audio?.muted ? "volume_off"
+                    : Audio.value > 0.5 ? "volume_up"
+                    : Audio.value > 0 ? "volume_down" : "volume_mute"
+                iconSize: root.ico; color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
+            StyledText {
+                text: Math.round((Audio.value ?? 0) * 100) + "%"
+                font { pixelSize: root.fs; family: Appearance.font.family.numbers }
+                color: root.colText; anchors.verticalCenter: parent.verticalCenter
+            }
         }
     }
 }
