@@ -1249,6 +1249,31 @@ Variants {
                                 }
                             }
 
+                            // Custom widget toggles
+                            Repeater {
+                                model: CustomWidgets.ready ? CustomWidgets.widgets : []
+                                RippleButton {
+                                    required property var modelData
+                                    readonly property bool widgetEnabled: Config.options?.background?.widgets?.custom?.[modelData.id]?.enable ?? true
+                                    width: 36; height: 36
+                                    buttonRadius: Appearance.rounding.full
+                                    toggled: widgetEnabled
+                                    colBackground: "transparent"
+                                    colBackgroundHover: CF.ColorUtils.applyAlpha(Appearance.colors.colOnLayer2, 0.08)
+                                    colBackgroundToggled: CF.ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.16)
+                                    colBackgroundToggledHover: CF.ColorUtils.applyAlpha(Appearance.colors.colPrimary, 0.24)
+                                    colRipple: CF.ColorUtils.applyAlpha(Appearance.colors.colOnLayer2, 0.12)
+                                    downAction: () => Config.setNestedValue("background.widgets.custom." + modelData.id + ".enable", !widgetEnabled)
+                                    contentItem: MaterialSymbol {
+                                        anchors.centerIn: parent
+                                        text: parent.modelData.icon || "widgets"
+                                        iconSize: 18
+                                        color: parent.toggled ? Appearance.colors.colPrimary : CF.ColorUtils.applyAlpha(Appearance.colors.colOnLayer2, 0.5)
+                                    }
+                                    StyledToolTip { text: modelData.name }
+                                }
+                            }
+
                             // Separator
                             Rectangle {
                                 width: 1; height: 24

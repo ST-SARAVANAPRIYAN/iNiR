@@ -110,6 +110,13 @@ Singleton {
         Config.setNestedValue("background.widgets.custom." + widgetId + "." + key, value);
     }
 
+    // Create a new widget from template
+    function create(name: string): void {
+        if (!name || name.length === 0) return;
+        _createProcess.widgetName = name;
+        _createProcess.running = true;
+    }
+
     IpcHandler {
         target: "customWidgets"
 
@@ -127,8 +134,7 @@ Singleton {
 
         function create(name: string): string {
             if (!name || name.length === 0) return "Usage: inir customWidgets create <name>";
-            _createProcess.widgetName = name;
-            _createProcess.running = true;
+            root.create(name);
             return `Creating widget "${name}" in ${root.widgetsDir}/${name}/...`;
         }
     }

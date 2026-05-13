@@ -27,6 +27,9 @@ AbstractBackgroundWidget {
     readonly property real widgetWidth: Math.round(Appearance.sizes.mediaControlsWidth * scaleFactor)
     readonly property real widgetHeight: Math.round(Appearance.sizes.mediaControlsHeight * scaleFactor)
     property real popupRounding: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
+    resizableAxes: ({ uniform: "widgetScale" })
+    resizeMinWidth: 160
+    resizeMinHeight: 80
 
     editPopoverContent: Component {
         Item {

@@ -135,27 +135,36 @@ AbstractWidget {
         return Math.round(Number.isFinite(numeric) ? numeric : 0)
     }
 
-    // Zone-aware target position
+    // Auto-placement results from image analysis (leastBusy/mostBusy)
+    property real _autoPlaceX: 0
+    property real _autoPlaceY: 0
+
+    // Target position — zones read stored config, free clamps to screen
     property real targetX: {
-        // If strategy is a zone name, compute position from zone
-        if (root._snapZones.indexOf(root.placementStrategy) >= 0) {
-            const pos = root._getZonePosition(root.placementStrategy);
-            return _snapToPixel(pos.x);
+        if (root._isZonePlacement) {
+            const rawX = Number(configEntry?.x ?? 0);
+            return _snapToPixel(Number.isFinite(rawX) ? rawX : 0);
         }
-        const rawX = Number(configEntry?.x ?? 0)
-        const safeX = Number.isFinite(rawX) ? rawX : 0
-        const maxX = Math.max(0, scaledScreenWidth - width)
-        return _snapToPixel(Math.max(0, Math.min(safeX, maxX)))
+        if (root.placementStrategy === "free") {
+            const rawX = Number(configEntry?.x ?? 0);
+            const safeX = Number.isFinite(rawX) ? rawX : 0;
+            const maxX = Math.max(0, scaledScreenWidth - width);
+            return _snapToPixel(Math.max(0, Math.min(safeX, maxX)));
+        }
+        return _snapToPixel(root._autoPlaceX);
     }
     property real targetY: {
-        if (root._snapZones.indexOf(root.placementStrategy) >= 0) {
-            const pos = root._getZonePosition(root.placementStrategy);
-            return _snapToPixel(pos.y);
+        if (root._isZonePlacement) {
+            const rawY = Number(configEntry?.y ?? 0);
+            return _snapToPixel(Number.isFinite(rawY) ? rawY : 0);
         }
-        const rawY = Number(configEntry?.y ?? 0)
-        const safeY = Number.isFinite(rawY) ? rawY : 0
-        const maxY = Math.max(0, scaledScreenHeight - height)
-        return _snapToPixel(Math.max(0, Math.min(safeY, maxY)))
+        if (root.placementStrategy === "free") {
+            const rawY = Number(configEntry?.y ?? 0);
+            const safeY = Number.isFinite(rawY) ? rawY : 0;
+            const maxY = Math.max(0, scaledScreenHeight - height);
+            return _snapToPixel(Math.max(0, Math.min(safeY, maxY)));
+        }
+        return _snapToPixel(root._autoPlaceY);
     }
 
     // Auto-position when NOT free and NOT actively being dragged in edit mode
@@ -432,7 +441,8 @@ AbstractWidget {
         property real _startY: 0
         property real _canvasStartX: 0
         property real _canvasStartY: 0
-        property real _startScaleFactor: 1.0
+        // Starting config values for ratio-based resize
+        property var _startConfigVals: ({})
 
         MouseArea {
             id: rhArea
@@ -453,24 +463,28 @@ AbstractWidget {
                 rh._startHeight = root.height;
                 rh._startX = root.x;
                 rh._startY = root.y;
-                rh._startScaleFactor = root.scaleFactor;
-                // Map to canvas space for stable delta (handles move with widget)
                 const mapped = rhArea.mapToItem(root.parent, mouse.x, mouse.y);
                 rh._canvasStartX = mapped.x;
                 rh._canvasStartY = mapped.y;
+                // Capture config values at drag start for ratio calculation
+                const axes = root.resizableAxes;
+                const ce = root.configEntry;
+                let vals = {};
+                if (axes.uniform) vals.uniform = Number(ce?.[axes.uniform] ?? 100);
+                if (axes.width) vals.width = Number(ce?.[axes.width] ?? Math.round(root.width / root.scaleFactor));
+                if (axes.height) vals.height = Number(ce?.[axes.height] ?? Math.round(root.height / root.scaleFactor));
+                rh._startConfigVals = vals;
                 root._isResizing = true;
             }
 
             onPositionChanged: (mouse) => {
                 if (!pressed) return;
-                // Compute delta in canvas space — immune to handle repositioning
                 const mapped = rhArea.mapToItem(root.parent, mouse.x, mouse.y);
                 const dx = mapped.x - rh._canvasStartX;
                 const dy = mapped.y - rh._canvasStartY;
                 const prefix = "background.widgets." + root.configEntryName;
                 const axes = root.resizableAxes;
                 const isUniform = !!axes.uniform;
-                const sf = rh._startScaleFactor;
 
                 let newW = rh._startWidth;
                 let newH = rh._startHeight;
@@ -490,14 +504,21 @@ AbstractWidget {
                     newH = dh;
                 }
 
+                // Ratio-based: multiply starting config value by size ratio
                 if (isUniform) {
-                    const uniformSize = Math.round(Math.max(newW, newH) / sf);
-                    Config.setNestedValue(prefix + "." + axes.uniform, uniformSize);
+                    const startSize = Math.max(rh._startWidth, rh._startHeight);
+                    const newSize = Math.max(newW, newH);
+                    const ratio = startSize > 0 ? newSize / startSize : 1;
+                    Config.setNestedValue(prefix + "." + axes.uniform, Math.round(rh._startConfigVals.uniform * ratio));
                 } else {
-                    if (axes.width && (rh.resizeLeft || rh.resizeRight))
-                        Config.setNestedValue(prefix + "." + axes.width, Math.round(newW / sf));
-                    if (axes.height && (rh.resizeTop || rh.resizeBottom))
-                        Config.setNestedValue(prefix + "." + axes.height, Math.round(newH / sf));
+                    if (axes.width && (rh.resizeLeft || rh.resizeRight)) {
+                        const ratio = rh._startWidth > 0 ? newW / rh._startWidth : 1;
+                        Config.setNestedValue(prefix + "." + axes.width, Math.round(rh._startConfigVals.width * ratio));
+                    }
+                    if (axes.height && (rh.resizeTop || rh.resizeBottom)) {
+                        const ratio = rh._startHeight > 0 ? newH / rh._startHeight : 1;
+                        Config.setNestedValue(prefix + "." + axes.height, Math.round(rh._startConfigVals.height * ratio));
+                    }
                 }
                 if (rh.resizeLeft) {
                     Config.setNestedValue(prefix + ".x", Math.round(newX));
@@ -626,14 +647,30 @@ AbstractWidget {
     
     onWallpaperPathChanged: _placementDebounce.restart()
     onPlacementStrategyChanged: {
-        syncFreePositionFromConfig()
-        refreshPlacementIfNeeded()
+        if (root._isZonePlacement) {
+            root.snapToZone(root.placementStrategy);
+        } else {
+            syncFreePositionFromConfig();
+            refreshPlacementIfNeeded();
+        }
+    }
+    // Re-snap zone positions when screen size changes
+    onScaledScreenWidthChanged: if (root._isZonePlacement) _zoneResnapDebounce.restart()
+    onScaledScreenHeightChanged: if (root._isZonePlacement) _zoneResnapDebounce.restart()
+    Timer {
+        id: _zoneResnapDebounce
+        interval: 100; repeat: false
+        onTriggered: root.snapToZone(root.placementStrategy)
     }
     Connections {
         target: Config
         function onReadyChanged() {
-            refreshPlacementIfNeeded()
-            syncFreePositionFromConfig()
+            if (root._isZonePlacement) {
+                root.snapToZone(root.placementStrategy);
+            } else {
+                refreshPlacementIfNeeded();
+                syncFreePositionFromConfig();
+            }
         }
     }
     Timer {
@@ -677,10 +714,9 @@ AbstractWidget {
                 const parsedContent = JSON.parse(output);
                 root.dominantColor = parsedContent.dominant_color || Appearance.colors.colPrimary;
                 if (root.placementStrategy === "free" || root._isZonePlacement) return;
-                // Offset auto-placed widgets so they don't stack on top of each other
                 const offsetPx = root.widgetIndex * 160;
-                root.targetX = root._snapToPixel(parsedContent.center_x * root.wallpaperScale - root.width / 2 + offsetPx);
-                root.targetY = root._snapToPixel(parsedContent.center_y * root.wallpaperScale - root.height / 2 + offsetPx * 0.4);
+                root._autoPlaceX = parsedContent.center_x * root.wallpaperScale - root.width / 2 + offsetPx;
+                root._autoPlaceY = parsedContent.center_y * root.wallpaperScale - root.height / 2 + offsetPx * 0.4;
             }
         }
     }

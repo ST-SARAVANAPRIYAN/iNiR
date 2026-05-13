@@ -26,6 +26,9 @@ AbstractBackgroundWidget {
 
     implicitHeight: contentColumn.implicitHeight
     implicitWidth: contentColumn.implicitWidth
+    resizableAxes: ({ uniform: "widgetScale" })
+    resizeMinWidth: 80
+    resizeMinHeight: 40
 
     editPopoverContent: Component {
         Item {
