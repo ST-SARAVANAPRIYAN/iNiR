@@ -786,6 +786,7 @@ Singleton {
                         property bool locked: false
                         property string placementStrategy: "free"
                         property string vizType: "bars"
+                        property string preset: "default" // legacy, kept for compat
                         property int waveOpacity: -1 // -1 = use global (appearance.cava.waveOpacity)
                         property int barCount: 48
                         property int barSpacing: 2
