@@ -57,9 +57,7 @@ post_process() {
     local screen_width="$1"
     local screen_height="$2"
     local wallpaper_path="$3"
-
-    "$SCRIPT_DIR/code/material-code-set-color.sh" &
-    # Best-effort live refresh is handled by apply-gtk-theme.sh for GTK/KDE apps.
+    # Editor theming is handled by modules/30-editors.sh via applycolor.sh.
 }
 
 hex_to_rgb_triplet() {
