@@ -10,6 +10,7 @@ FRAMERATE="${2:-60}"
 SENSITIVITY="${3:-100}"
 BARS="${4:-50}"
 STEREO="${5:-false}"
+DESKTOP_ENTRY="${6:-}"
 
 # Detect audio backend (pipewire or pulseaudio)
 get_audio_method() {
@@ -32,7 +33,20 @@ get_default_monitor() {
 }
 
 METHOD=$(get_audio_method)
-MONITOR=$(get_default_monitor)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOLVER="$SCRIPT_DIR/resolve_audio_source.py"
+RESOLVED=""
+if [[ -f "$RESOLVER" ]]; then
+  RESOLVED=$(python3 "$RESOLVER" --desktop-entry "$DESKTOP_ENTRY" 2>/dev/null || true)
+fi
+if [[ -n "$RESOLVED" ]]; then
+  MONITOR="$RESOLVED"
+elif pactl list sink-inputs 2>/dev/null | grep -q "^Sink Input #"; then
+  # Audio is playing but nothing scored as music — avoid default sink (Discord, calls, etc.)
+  MONITOR="__inir_no_music__"
+else
+  MONITOR=$(get_default_monitor)
+fi
 CHANNELS="mono"
 [[ "$STEREO" == "true" ]] && CHANNELS="stereo"
 

@@ -8,6 +8,7 @@ PALETTE_FILE="$STATE_DIR/user/generated/palette.json"
 COVER_COLORS_FILE="$STATE_DIR/user/generated/cover-colors.json"
 CAVA_ACTIVE_COVER_FILE="$STATE_DIR/user/generated/cava-active-cover.path"
 CAVA_EXTRACT_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../cava" && pwd)/extract_cover_colors.py"
+CAVA_RESOLVE_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../cava" && pwd)/resolve_audio_source.py"
 CAVA_CONFIG_DIR="$XDG_CONFIG_HOME/cava"
 CAVA_CONFIG="$CAVA_CONFIG_DIR/config"
 
@@ -130,9 +131,29 @@ build_gradient_cover() {
   printf '%s\n' "${colors[@]}"
 }
 
+resolve_cava_input_source() {
+  local method source
+  if pactl info 2>/dev/null | grep -qi "PipeWire"; then
+    method="pipewire"
+  else
+    method="pulse"
+  fi
+  if [[ -f "$CAVA_RESOLVE_SCRIPT" ]]; then
+    source=$(python3 "$CAVA_RESOLVE_SCRIPT" 2>/dev/null || true)
+  fi
+  if [[ -z "${source:-}" ]]; then
+    local default_sink
+    default_sink=$(pactl get-default-sink 2>/dev/null)
+    source="${default_sink:+${default_sink}.monitor}"
+    source="${source:-auto}"
+  fi
+  printf '%s\n' "$method" "$source"
+}
+
 generate_managed_block() {
   local color_source gradient_count fg_override bg_override
   local sensitivity bars framerate bar_width bar_spacing stereo
+  local input_method input_source
 
   color_source=$(cava_cfg colorSource "theme")
   gradient_count=$(cava_cfg gradientCount "8")
@@ -163,6 +184,10 @@ generate_managed_block() {
 
   (( ${#gradient[@]} >= 2 )) || return 1
 
+  mapfile -t _input_cfg < <(resolve_cava_input_source)
+  input_method="${_input_cfg[0]:-pipewire}"
+  input_source="${_input_cfg[1]:-auto}"
+
   # Resolve background
   local bg="${bg_override}"
   if [[ -z "$bg" ]]; then
@@ -183,6 +208,11 @@ generate_managed_block() {
   (( bars > 0 )) && printf 'bars = %d\n' "$bars"
   printf 'bar_width = %d\n' "$bar_width"
   printf 'bar_spacing = %d\n' "$bar_spacing"
+  printf '\n'
+
+  printf '[input]\n'
+  printf 'method = %s\n' "$input_method"
+  printf 'source = %s\n' "$input_source"
   printf '\n'
 
   # Output section

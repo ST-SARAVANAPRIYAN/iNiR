@@ -3,6 +3,8 @@ import Quickshell
 import Quickshell.Io
 import qs.modules.common
 import qs.modules.common.functions
+import qs.services
+
 Item {
     id: root
 
@@ -20,13 +22,27 @@ Item {
     // Bars: 0 means auto — use 50 as a sensible widget default
     readonly property int effectiveBars: cfgBars > 0 ? cfgBars : 50
 
+    readonly property string playerDesktopEntry: {
+        if (MprisController.isYtMusicActive && YtMusic.currentVideoId)
+            return "mpv"
+        return MprisController.activePlayer?.desktopEntry ?? ""
+    }
+
     // Restart cava when config changes while active
     onCfgFramerateChanged: if (active) configRestart.restart()
     onCfgSensitivityChanged: if (active) configRestart.restart()
     onCfgBarsChanged: if (active) configRestart.restart()
     onCfgStereoChanged: if (active) configRestart.restart()
+    onPlayerDesktopEntryChanged: if (active) configRestart.restart()
 
     property bool _pendingRestart: false
+
+    Connections {
+        target: MprisController
+        function onTrackChanged(): void {
+            if (root.active) configRestart.restart()
+        }
+    }
 
     Timer {
         id: configRestart
@@ -73,7 +89,8 @@ Item {
         running: false
         command: ["/usr/bin/bash", root.scriptPath, root.configPath,
             String(root.cfgFramerate), String(root.cfgSensitivity),
-            String(root.effectiveBars), String(root.cfgStereo)]
+            String(root.effectiveBars), String(root.cfgStereo),
+            root.playerDesktopEntry]
         onExited: (code, status) => {
             if (code === 0 && root.active)
                 cavaProc.running = true
