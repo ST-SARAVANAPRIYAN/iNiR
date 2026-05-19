@@ -545,6 +545,9 @@
         "hideUpscaleNotification": false
     },
     "bar": {
+        "activeWindow": {
+            "showTitle": true
+        },
         "autoHide": {
             "enable": false,
             "hoverRegionWidth": 2,

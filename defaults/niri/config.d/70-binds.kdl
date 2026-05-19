@@ -48,6 +48,8 @@ binds {
 
     // Lock screen.
     Mod+Alt+L allow-when-locked=true { spawn "inir" "lock" "activate"; }
+    // Re-focus the lock surface (workaround when input feels dead after suspend/resume).
+    Mod+Shift+L allow-when-locked=true { spawn "inir" "lock" "focus"; }
 
     // Region selector: screenshot / OCR / Google Lens search.
     Mod+Shift+S { spawn "inir" "region" "screenshot"; }
