@@ -246,7 +246,7 @@ Singleton {
         interval: root.readWriteDelay
         repeat: false
         onTriggered: {
-            if (root._writeInFlight) {
+            if (root._writeInFlight || customInjectTimer.running) {
                 root._pendingReload = true;
                 return;
             }
@@ -302,6 +302,7 @@ Singleton {
             if (root._pendingWrite) {
                 root._pendingWrite = false;
                 fileWriteTimer.restart();
+                return; // write takes priority — reload after next onSaved
             }
             // Write cycle done — run any deferred reload
             if (root._pendingReload) {
