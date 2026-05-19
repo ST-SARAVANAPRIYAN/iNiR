@@ -383,7 +383,9 @@ check_qs_abi() {
             qt_lib_path="/usr/lib64/libQt6Core.so.6"
         fi
         qt_mtime="$(stat -c %Y "$(readlink -f "$qt_lib_path" 2>/dev/null || echo "$qt_lib_path")" 2>/dev/null || echo 0)"
-        abi_cache_key="${qs_mtime}:${qt_mtime}"
+        # v2 prefix invalidates pre-fix caches that passed under major.minor-only comparison
+        # (those would have wrongly cached a pass for e.g. 6.11.0 -> 6.11.1 patch bumps).
+        abi_cache_key="v2:${qs_mtime}:${qt_mtime}"
 
         if [[ -f "$abi_cache_file" ]] && [[ "$(<"$abi_cache_file")" == "$abi_cache_key" ]]; then
             # Cached pass — same binaries as last successful check
@@ -399,13 +401,11 @@ check_qs_abi() {
         if [[ -z "$runtime_qt" ]] && command -v pkg-config >/dev/null 2>&1; then
             runtime_qt="$(pkg-config --modversion Qt6Core 2>/dev/null || true)"
         fi
-        if [[ -n "$buildtime_qt" && -n "$runtime_qt" ]]; then
-            local build_minor="${buildtime_qt%.*}"
-            local runtime_minor="${runtime_qt%.*}"
-            if [[ "$build_minor" != "$runtime_minor" ]]; then
-                mismatch_detected=true
-                mismatch_msg="Quickshell built against Qt $buildtime_qt but system has Qt $runtime_qt"
-            fi
+        # Compare full version (major.minor.patch). Quickshell warns on patch bumps too
+        # (private API changes between 6.11.0 and 6.11.1 are common), so iNiR must match.
+        if [[ -n "$buildtime_qt" && -n "$runtime_qt" && "$buildtime_qt" != "$runtime_qt" ]]; then
+            mismatch_detected=true
+            mismatch_msg="Quickshell built against Qt $buildtime_qt but system has Qt $runtime_qt"
         fi
 
         # Cache successful result so next start skips the expensive strings scan
