@@ -28,8 +28,7 @@ Singleton {
         fileReloadTimer.stop();
         root._prepareCustomInject();
         root._writeInFlight = true;
-        configFileView.writeAdapter();
-        // onSaved handles _injectCustomDataSync for custom data
+        root._writeDirectFromAdapter();
     }
 
     function _applyNestedKey(nestedKey, value) {
@@ -223,6 +222,36 @@ Singleton {
             root.customWidgetData = root._cloneObject(root._customSnapshotForInject);
     }
 
+    // Direct write: serialize adapter state to JSON via setText.
+    // Bypasses writeAdapter() which in QS 0.3 may not emit onSaved when
+    // sub-JsonObject mutations aren't detected as dirty.
+    function _writeDirectFromAdapter(): void {
+        try {
+            const adapterText = JSON.stringify(root.options);
+            const adapterObj = JSON.parse(adapterText);
+            if (root._hasObjectKeys(root.customWidgetData)) {
+                if (!adapterObj.background) adapterObj.background = {};
+                if (!adapterObj.background.widgets) adapterObj.background.widgets = {};
+                adapterObj.background.widgets.custom = root.customWidgetData;
+            }
+            const newText = JSON.stringify(adapterObj, null, 4);
+            const currentText = configFileView.text() ?? "";
+            if (newText === currentText) {
+                root._writeInFlight = false;
+                if (root._pendingWrite) {
+                    root._pendingWrite = false;
+                    fileWriteTimer.restart();
+                }
+                return;
+            }
+            writeFlightGuard.restart();
+            configFileView.setText(newText);
+        } catch (e) {
+            console.warn("[Config] _writeDirectFromAdapter failed:", e.message);
+            root._writeInFlight = false;
+        }
+    }
+
     function _injectCustomDataSync(): void {
         const customData = root._hasObjectKeys(root._customSnapshotForInject)
             ? root._customSnapshotForInject : root.customWidgetData;
@@ -269,7 +298,24 @@ Singleton {
             root._pendingWrite = false;
             root._writeInFlight = true;
             fileReloadTimer.stop();
-            configFileView.writeAdapter();
+            root._writeDirectFromAdapter();
+        }
+    }
+
+    // Safety: if onSaved never fires, unstick _writeInFlight so future writes pass.
+    Timer {
+        id: writeFlightGuard
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (root._writeInFlight) {
+                console.warn("[Config] write did not complete within 1s — unsticking write lock");
+                root._writeInFlight = false;
+                if (root._pendingWrite) {
+                    root._pendingWrite = false;
+                    fileWriteTimer.restart();
+                }
+            }
         }
     }
 
@@ -293,6 +339,7 @@ Singleton {
         blockWrites: root.blockWrites
         onFileChanged: fileReloadTimer.restart()
         onSaved: {
+            writeFlightGuard.stop();
             root._writeInFlight = false;
             if (root._pendingCustomInject) {
                 root._pendingCustomInject = false;
