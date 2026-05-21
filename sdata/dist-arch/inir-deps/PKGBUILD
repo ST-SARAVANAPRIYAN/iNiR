@@ -174,7 +174,7 @@ optdepends=(
   'whitesur-icon-theme: macOS-style icons'
   'qt6-avif-image-plugin: AVIF wallpaper support'
   'uv: Python package manager for color pipeline'
-  'awww-bin: wallpaper daemon'
+  'awww: wallpaper daemon'
   'tesseract-data-spa: Spanish OCR'
 )
 

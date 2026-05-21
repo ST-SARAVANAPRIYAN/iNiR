@@ -54,7 +54,7 @@ depends=(
   xwayland-satellite
 )
 optdepends=(
-  'awww-bin: animated wallpaper support'
+  'awww: animated wallpaper support'
   'blueman: Bluetooth device management'
   'breeze-icons: fallback icon theme'
   'cava: audio visualizer'
