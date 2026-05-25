@@ -25,6 +25,18 @@ Scope {
     readonly property real dockMargin: Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut
     property real popupRounding: Appearance.inirEverywhere ? Appearance.inir.roundingLarge : Appearance.rounding.large
     readonly property bool visualizerActive: mediaControlsLoader.active && MprisController.isPlaying
+    property var focusedScreen: CompositorService.isNiri
+        ? Quickshell.screens.find(s => s.name === NiriService.currentOutput) ?? GlobalStates.primaryScreen
+        : Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? GlobalStates.primaryScreen
+    property var targetScreen: screenFromList(Config.options?.media?.screenList ?? [], focusedScreen)
+
+    function screenFromList(list, preferred) {
+        if (!list || list.length === 0)
+            return preferred ?? GlobalStates.primaryScreen
+        if (preferred && list.includes(preferred.name ?? ""))
+            return preferred
+        return Quickshell.screens.find(s => list.includes(s?.name ?? "")) ?? GlobalStates.primaryScreen ?? preferred
+    }
 
     CavaProcess {
         id: cavaProcess
@@ -56,6 +68,7 @@ Scope {
         sourceComponent: PanelWindow {
             id: mediaControlsRoot
             visible: true
+            screen: root.targetScreen
 
             exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0

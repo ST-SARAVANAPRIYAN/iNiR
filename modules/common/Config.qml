@@ -774,6 +774,7 @@ Singleton {
             property JsonObject background: JsonObject {
                 property JsonObject widgets: JsonObject {
                     property int dynamicOpacity: 0 // 0-100: reduce widget opacity when windows are on current workspace
+                    property list<string> screenList: []
                     property JsonObject clock: JsonObject {
                         property bool enable: true
                         property bool locked: false
@@ -1415,6 +1416,7 @@ Singleton {
                 property bool filterDuplicatePlayers: true
                 // Popup mode: "dock" (bottom overlay, default) or "bar" (anchored to bar widget)
                 property string popupMode: "dock"
+                property list<string> screenList: []
             }
 
             property JsonObject hotspot: JsonObject {
@@ -1444,6 +1446,7 @@ Singleton {
 
             property JsonObject notifications: JsonObject {
                 property int timeout: 7000
+                property list<string> screenList: []
                 // Timeouts por urgencia (ms). 0 = no expira automáticamente
                 property int timeoutLow: 5000
                 property int timeoutNormal: 7000
@@ -1467,6 +1470,7 @@ Singleton {
             property JsonObject osd: JsonObject {
                 property int timeout: 1000
                 property bool mediaEnabled: true
+                property list<string> screenList: []
             }
 
             property JsonObject osk: JsonObject {
@@ -2124,6 +2128,7 @@ Singleton {
                     property bool tintTrayIcons: false
                     property int iconSize: 26
                     property int searchIconSize: 24
+                    property list<string> screenList: [] // Waffle taskbar output filter. Empty = all screens.
                     property JsonObject activationWatermark: JsonObject {
                         property bool enable: false
                     }

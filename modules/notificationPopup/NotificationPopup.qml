@@ -22,9 +22,16 @@ Scope {
         id: root
         // Hide during GameMode to avoid input interference
         visible: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked && !(GameMode.active && GameMode.suppressNotifications)
-        screen: CompositorService.isNiri
-            ? Quickshell.screens.find(s => s.name === NiriService.currentOutput) ?? GlobalStates.primaryScreen
-            : Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+        screen: {
+            const list = Config.options?.notifications?.screenList ?? [];
+            const focused = CompositorService.isNiri
+                ? Quickshell.screens.find(s => s.name === NiriService.currentOutput) ?? GlobalStates.primaryScreen
+                : Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null;
+            if (!list || list.length === 0) return focused;
+            if (focused && list.includes(focused.name ?? "")) return focused;
+            const pinned = Quickshell.screens.find(s => list.includes(s?.name ?? ""));
+            return pinned ?? GlobalStates.primaryScreen ?? focused;
+        }
 
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay

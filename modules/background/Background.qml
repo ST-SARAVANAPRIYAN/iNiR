@@ -1077,7 +1077,12 @@ Scope {
             WidgetCanvas {
                 id: widgetCanvas
                 z: 20
-                enabled: !GlobalStates.screenLocked  // Disable all widget input during lock
+                visible: {
+                    const list = Config.options?.background?.widgets?.screenList ?? [];
+                    if (!list || list.length === 0) return true;
+                    return list.includes(modelData?.name ?? "");
+                }
+                enabled: visible && !GlobalStates.screenLocked  // Disable all widget input during lock
                 opacity: {
                     const dynOp = Math.max(0, Math.min(100, Number(Config.options?.background?.widgets?.dynamicOpacity) || 0));
                     if (dynOp <= 0 || !bgRoot.focusWindowsPresent) return 1;

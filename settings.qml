@@ -114,6 +114,12 @@ ApplicationWindow {
             icon: "widgets",
             essential: false,
             component: "modules/settings/DesktopWidgetsConfig.qml"
+        },
+        {
+            name: Translation.tr("Monitors"),
+            icon: "display_settings",
+            essential: true,
+            component: "modules/settings/MonitorVisibilityConfig.qml"
         }
     ]
     property int currentPage: 0
@@ -548,6 +554,31 @@ ApplicationWindow {
             label: Translation.tr("Desktop battery widget"),
             description: Translation.tr("Battery status on the desktop background"),
             keywords: ["battery", "widget", "background", "charge", "power"]
+        },
+
+        // =====================================================================
+        // Monitors (page 15)
+        // =====================================================================
+        {
+            pageIndex: 15, pageName: pages[15].name,
+            section: Translation.tr("Shell visibility"),
+            label: Translation.tr("Primary monitor"),
+            description: Translation.tr("Choose the default output for shell popups"),
+            keywords: ["monitor", "display", "primary", "screen", "output"]
+        },
+        {
+            pageIndex: 15, pageName: pages[15].name,
+            section: Translation.tr("Material shell surfaces"),
+            label: Translation.tr("Bar, dock, and media controls"),
+            description: Translation.tr("Choose which monitors show Material shell surfaces"),
+            keywords: ["monitor", "visibility", "bar", "dock", "media", "workspace", "secondary"]
+        },
+        {
+            pageIndex: 15, pageName: pages[15].name,
+            section: Translation.tr("Shared popups and widgets"),
+            label: Translation.tr("Shared popups and widgets"),
+            description: Translation.tr("Choose which monitors show notifications, OSD, and desktop widgets"),
+            keywords: ["monitor", "visibility", "notifications", "osd", "widgets", "secondary", "workspace"]
         },
 
         // =====================================================================

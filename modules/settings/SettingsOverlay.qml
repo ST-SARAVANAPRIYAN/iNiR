@@ -111,6 +111,10 @@ Scope {
         { pageIndex: 14, pageName: overlayPages[14].name, section: Translation.tr("System Monitor"), label: Translation.tr("System monitor widget"), description: Translation.tr("CPU, RAM, GPU usage on the desktop"), keywords: ["system", "monitor", "cpu", "ram", "gpu", "usage", "performance"] },
         { pageIndex: 14, pageName: overlayPages[14].name, section: Translation.tr("Battery"), label: Translation.tr("Desktop battery widget"), description: Translation.tr("Battery status on the desktop background"), keywords: ["battery", "widget", "background", "charge", "power"] },
         { pageIndex: 14, pageName: overlayPages[14].name, section: Translation.tr("Custom Widgets"), label: Translation.tr("Custom widgets"), description: Translation.tr("Create, install, and manage custom QML widgets"), keywords: ["custom", "widget", "create", "qml", "install", "user", "plugin"] },
+        // Monitors (page 15)
+        { pageIndex: 15, pageName: overlayPages[15].name, section: Translation.tr("Shell visibility"), label: Translation.tr("Primary monitor"), description: Translation.tr("Choose the default output for shell popups"), keywords: ["monitor", "display", "primary", "screen", "output"] },
+        { pageIndex: 15, pageName: overlayPages[15].name, section: Translation.tr("Material shell surfaces"), label: Translation.tr("Bar, dock, and media controls"), description: Translation.tr("Choose which monitors show Material shell surfaces"), keywords: ["monitor", "visibility", "bar", "dock", "media", "workspace", "secondary"] },
+        { pageIndex: 15, pageName: overlayPages[15].name, section: Translation.tr("Shared popups and widgets"), label: Translation.tr("Shared popups and widgets"), description: Translation.tr("Choose which monitors show notifications, OSD, and desktop widgets"), keywords: ["monitor", "visibility", "notifications", "osd", "widgets", "secondary", "workspace"] },
         // Themes (page 4)
         { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Global Style"), description: Translation.tr("Material, Cards, Aurora glass effect, Inir TUI style"), keywords: ["global", "style", "aurora", "inir", "material", "cards", "glass", "tui", "transparency", "blur"] },
         { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Aurora"), description: Translation.tr("Glass effect with wallpaper blur behind panels"), keywords: ["aurora", "glass", "blur", "transparency", "style", "translucent"] },
@@ -1463,7 +1467,8 @@ Scope {
                                             text: {
                                                 var icons = ["instant_mix", "browse", "toast", "texture", "palette",
                                                             "bottom_app_bar", "build", "settings", "construction", "keyboard",
-                                                            "extension", "window", "desktop_windows", "info"];
+                                                            "extension", "window", "desktop_windows", "info", "widgets",
+                                                            "display_settings"];
                                                 return icons[resultDelegate.modelData.pageIndex] || "settings";
                                             }
                                             iconSize: 12
@@ -1634,7 +1639,7 @@ Scope {
     // Navigation categories for grouping pages in the rail
     property var navCategories: [
         { label: Translation.tr("Appearance"), pages: [0, 4, 3, 14] },
-        { label: Translation.tr("Layout"), pages: [2, 5, 6, 10] },
+        { label: Translation.tr("Layout"), pages: [2, 5, 6, 10, 15] },
         { label: Translation.tr("System"), pages: [1, 7, 8] },
         { label: Translation.tr("Reference"), pages: [9, 11, 12, 13] }
     ]
@@ -1760,6 +1765,14 @@ Scope {
             desc: Translation.tr("Clock, weather, media, custom"),
             essential: false,
             component: Quickshell.shellPath("modules/settings/DesktopWidgetsConfig.qml")
+        },
+        {
+            name: Translation.tr("Monitors"),
+            shortName: "",
+            icon: "display_settings",
+            desc: Translation.tr("Per-monitor shell visibility"),
+            essential: true,
+            component: Quickshell.shellPath("modules/settings/MonitorVisibilityConfig.qml")
         }
     ]
 

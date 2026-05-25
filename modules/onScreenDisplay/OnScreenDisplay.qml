@@ -17,6 +17,7 @@ Scope {
     property var focusedScreen: CompositorService.isNiri
         ? Quickshell.screens.find(s => s.name === NiriService.currentOutput) ?? GlobalStates.primaryScreen
         : Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? GlobalStates.primaryScreen
+    property var targetScreen: screenFromList(Config.options?.osd?.screenList ?? [], focusedScreen)
 
     property string currentIndicator: "volume"
     property bool _syncingOpenStates: false
@@ -43,6 +44,14 @@ Scope {
             sourceUrl: "indicators/KeyboardLayoutIndicator.qml"
         },
     ]
+
+    function screenFromList(list, preferred) {
+        if (!list || list.length === 0)
+            return preferred ?? GlobalStates.primaryScreen
+        if (preferred && list.includes(preferred.name ?? ""))
+            return preferred
+        return Quickshell.screens.find(s => list.includes(s?.name ?? "")) ?? GlobalStates.primaryScreen ?? preferred
+    }
 
     function setOpenStates(volume, brightness, media, keyboardLayout) {
         root._syncingOpenStates = true;
@@ -197,12 +206,12 @@ Scope {
         sourceComponent: PanelWindow {
             id: osdRoot
             color: "transparent"
-            screen: root.focusedScreen
+            screen: root.targetScreen
 
             Connections {
                 target: root
-                function onFocusedScreenChanged() {
-                    osdRoot.screen = root.focusedScreen;
+                function onTargetScreenChanged() {
+                    osdRoot.screen = root.targetScreen;
                 }
             }
 

@@ -369,6 +369,7 @@
             ]
         },
         "widgets": {
+            "screenList": [],
             "clock": {
                 "cookie": {
                     "aiStyling": false,
@@ -789,6 +790,7 @@
             "kitty"
         ],
         "pinnedOnStartup": true,
+        "screenList": [],
         "showBackground": true,
         "iconSize": 35,
         "separatePinnedFromRunning": true,
@@ -889,7 +891,8 @@
         }
     },
     "media": {
-        "filterDuplicatePlayers": true
+        "filterDuplicatePlayers": true,
+        "screenList": []
     },
     "musicRecognition": {
         "interval": 4,
@@ -902,6 +905,7 @@
         "edgeMargin": 4,
         "maxPopupLifetime": 30000,
         "position": "topRight",
+        "screenList": [],
         "timeout": 3000,
         "timeoutCritical": 0,
         "timeoutLow": 5000,
@@ -909,6 +913,7 @@
     },
     "osd": {
         "mediaEnabled": true,
+        "screenList": [],
         "timeout": 1000
     },
     "osk": {
@@ -1534,6 +1539,7 @@
             "iconSize": 26,
             "leftAlignApps": false,
             "monochromeIcons": false,
+            "screenList": [],
             "activationWatermark": {
                 "enable": true
             },
