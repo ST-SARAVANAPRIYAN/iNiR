@@ -184,7 +184,10 @@ Scope {
                 interval: 2000
                 running: GlobalStates.screenLocked && !lockSurfaceLoader.item
                 onTriggered: {
-                    console.warn("[Lock] Lock surface failed to load, using swaylock fallback")
+                    console.warn("[Lock] Lock surface failed to load after 2s — status:",
+                                 lockSurfaceLoader.status, "active:", lockSurfaceLoader.active,
+                                 "Config.ready:", Config.ready, "waffle:", root._cachedUseWaffleLock,
+                                 "isNiri:", CompositorService.isNiri)
                     root.useFallbackLock()
                 }
             }
@@ -202,8 +205,12 @@ Scope {
                 // Detect load errors
                 onStatusChanged: {
                     if (status === Loader.Error) {
-                        console.error("[Lock] Lock surface failed to load: " + sourceComponent.errorString())
+                        console.error("[Lock] Lock surface failed to load:", sourceComponent.errorString())
                         root.useFallbackLock()
+                    } else if (status === Loader.Loading) {
+                        console.info("[Lock] Lock surface loading...")
+                    } else if (status === Loader.Ready) {
+                        console.info("[Lock] Lock surface loaded successfully")
                     }
                 }
                 

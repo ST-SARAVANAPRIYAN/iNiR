@@ -84,6 +84,9 @@ MouseArea {
         // tracked in #163/#164.
         cache: false
         visible: !root.wallpaperIsGif && !root.wallpaperIsVideo && !root.useSafeBlurPipeline
+        onStatusChanged: {
+            if (status === Image.Error) console.error("[LockSurface] Image load error:", source)
+        }
         
         layer.enabled: root.blurEnabled && !root.useSafeBlurPipeline
         layer.effect: FastBlur {
@@ -108,6 +111,9 @@ MouseArea {
         cache: false
         visible: false
         z: -2
+        onStatusChanged: {
+            if (status === Image.Error) console.error("[LockSurface] Image source load error:", source)
+        }
     }
     
     // Animated GIF wallpaper
@@ -122,6 +128,9 @@ MouseArea {
         asynchronous: true
         cache: false
         playing: visible && root.enableAnimation
+        onStatusChanged: {
+            if (status === Image.Error) console.error("[LockSurface] GIF load error:", source)
+        }
         
         layer.enabled: root.blurEnabled && !root.useSafeBlurPipeline
         layer.effect: FastBlur {
@@ -146,6 +155,9 @@ MouseArea {
         playing: root.enableAnimation
         visible: false
         z: -2
+        onStatusChanged: {
+            if (status === Image.Error) console.error("[LockSurface] GIF source load error:", source)
+        }
     }
     
     // Video wallpaper
@@ -196,6 +208,10 @@ MouseArea {
             }
         }
         
+        onErrorOccurred: (error, errorString) => {
+            console.error("[LockSurface] Video wallpaper error:", error, errorString, "source:", source)
+        }
+        
         layer.enabled: root.blurEnabled && !root.useSafeBlurPipeline
         layer.effect: FastBlur {
             radius: root.blurRadius
@@ -243,6 +259,10 @@ MouseArea {
                 if (shouldPlay) play()
                 else pauseAndShowFirstFrame()
             }
+        }
+        
+        onErrorOccurred: (error, errorString) => {
+            console.error("[LockSurface] Video wallpaper source error:", error, errorString, "source:", source)
         }
     }
 
@@ -1789,6 +1809,16 @@ MouseArea {
         root.hasAttemptedUnlock = false
         // Force focus to receive keyboard events - use callLater to ensure component is fully ready
         Qt.callLater(() => root.forceActiveFocus())
+        // Diagnostic logging for crash investigation (#168)
+        console.info("[LockSurface] Component loaded — wallpaper:", root._wallpaperSource,
+                     "isVideo:", root.wallpaperIsVideo, "isGif:", root.wallpaperIsGif,
+                     "useSafeBlur:", root.useSafeBlurPipeline, "isNiri:", CompositorService.isNiri)
+    }
+    
+    Component.onDestruction: {
+        // Log destruction — if this appears without a corresponding unlock, the surface crashed
+        console.warn("[LockSurface] Component destroying — screenLocked:", GlobalStates.screenLocked,
+                     "hasAttemptedUnlock:", root.hasAttemptedUnlock)
     }
     
     // Reset state when lock screen is activated
