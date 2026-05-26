@@ -242,11 +242,10 @@ RippleButton {
             }
         }
 
-        // Action text
+        // Action text - keep visible to reserve space, only animate opacity
         StyledText {
             Layout.fillWidth: false
             opacity: (root.hovered || root.focus) ? 1 : 0
-            visible: opacity > 0
             Behavior on opacity {
                 enabled: Appearance.animationsEnabled
                 NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Easing.OutCubic }
@@ -258,13 +257,12 @@ RippleButton {
             text: root.itemClickActionName
         }
 
+        // Action buttons - keep visible to reserve space, only animate opacity
         RowLayout {
             Layout.alignment: Qt.AlignTop
-            Layout.topMargin: root.buttonVerticalPadding
-            Layout.bottomMargin: -root.buttonVerticalPadding
             spacing: 4
             opacity: (root.hovered || root.focus || root.isSelected) ? 1 : 0
-            visible: opacity > 0
+            enabled: opacity > 0.5
             Behavior on opacity {
                 enabled: Appearance.animationsEnabled
                 NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Easing.OutCubic }

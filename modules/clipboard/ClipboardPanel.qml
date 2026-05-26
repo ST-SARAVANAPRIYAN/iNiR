@@ -408,6 +408,10 @@ Scope {
                 anchors.margins: 10
                 spacing: 10
 
+                // Shell desaturation effect
+                layer.enabled: Appearance.shouldDesaturate("popups") && contentColumn.visible
+                layer.effect: ShellDesaturationEffect {}
+
                 Toolbar {
                     id: headerToolbar
                     Layout.fillWidth: true
@@ -617,9 +621,7 @@ Scope {
                             }
                             query: root.searchText
 
-                            onHoveredChanged: {
-                                if (hovered) listView.currentIndex = index
-                            }
+
                         }
 
                         function moveNext() {
