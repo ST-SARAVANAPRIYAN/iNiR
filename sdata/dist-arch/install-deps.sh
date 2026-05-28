@@ -385,10 +385,8 @@ install_font_fallback() {
   return 1
 }
 
-# Steam theming — only install millennium-bin if steam is already present
-if pacman -Q steam >/dev/null 2>&1 || command -v steam >/dev/null 2>&1; then
-  AUR_PACKAGES+=(millennium-bin)
-fi
+# Millennium (Steam theming) is opt-in — not installed automatically.
+# Users who want Steam Material-Theme can install millennium-bin manually.
 
 # Add other AUR packages based on flags
 if $INSTALL_FONTS; then
