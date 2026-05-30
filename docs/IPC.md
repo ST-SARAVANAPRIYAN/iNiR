@@ -231,6 +231,22 @@ bind "Super+Comma" { spawn "inir" "settings"; }
 
 ---
 
+### settingsNav
+
+Navigate the settings overlay to a specific page (same as clicking the nav rail).
+
+| Function | Description |
+|----------|-------------|
+| `page(index)` | Open the overlay and jump to page `index` |
+| `count` | Number of settings pages |
+| `current` | Current page index |
+
+```sh
+inir ipc settingsNav page 5
+```
+
+---
+
 ### controlPanel
 
 Quick settings panel. Toggles, sliders, and system controls without opening full settings.
