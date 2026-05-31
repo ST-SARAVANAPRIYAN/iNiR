@@ -633,18 +633,8 @@
         "bottom": false,
         "cornerStyle": 1,
         "customRounding": -1,
-        "edgeModulesLayout": {
-            "leftOrder": [
-                "leftSidebarButton",
-                "activeWindow"
-            ],
-            "rightOrder": [
-                "rightSidebarButton",
-                "sysTray",
-                "weather"
-            ]
-        },
         "floatStyleShadow": true,
+        "height": 40,
         "indicators": {
             "notifications": {
                 "showUnreadCount": true
@@ -664,23 +654,33 @@
             "weather": true,
             "workspaces": true
         },
-        "modulesLayout": {
-            "order": [
-                "media",
+        "opacity": 1.0,
+        "layout": {
+            "left": [
+                "leftSidebarButton",
+                "activeWindow"
+            ],
+            "centerLeft": [
                 "resources",
-                "utilButtons",
-                "workspaces",
+                "media"
+            ],
+            "center": [
+                "workspaces"
+            ],
+            "centerRight": [
                 "clock",
+                "utilButtons",
                 "battery"
-            ]
-        },
-        "modulesPlacement": {
-            "battery": "end",
-            "clock": "start",
-            "media": "start",
-            "resources": "center",
-            "utilButtons": "start",
-            "workspaces": "center"
+            ],
+            "right": [
+                "rightSidebarButton",
+                "tray",
+                "timer",
+                "shellUpdate",
+                "spacer",
+                "weather"
+            ],
+            "migrated": true
         },
         "resources": {
             "showMemoryIndicator": true,

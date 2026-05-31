@@ -71,8 +71,29 @@ Item { // Bar content region
 
     property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen?.width) ? 2 : (Appearance.sizes.barShortenScreenWidthThreshold >= screen?.width) ? 1 : 0
     readonly property int baseCenterSideModuleWidth: (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened : (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : Appearance.sizes.barCenterSideModuleWidth
-    // Both center groups share the same width so workspaces stay perfectly centered
-    readonly property int centerSideModuleWidth: Math.max(baseCenterSideModuleWidth, rightCenterGroupContent.implicitWidth)
+    // Max width a side pill may take before it would collide with an edge
+    // section. Pure outer geometry (screen width, edge sections, workspaces) so
+    // there is no binding loop with the pills' own content width. A pill takes
+    // its NATURAL content width, clamped to this — its modules elide/clip to fit
+    // instead of inflating the pill or pushing into the edges.
+    readonly property real centerSideMaxWidth: {
+        const total = root.width
+        if (!(total > 0)) return root.baseCenterSideModuleWidth
+        const edge = Math.max(barLeftSideMouseArea.implicitWidth, barRightSideMouseArea.implicitWidth)
+        const wsHalf = middleCenterGroup.width / 2
+        return Math.max(0, total / 2 - edge - wsHalf - 12)
+    }
+    // Both centre pills share one width = the larger of the two non-empty
+    // content widths (clamped to centerSideMaxWidth). This keeps the cluster
+    // balanced around the workspaces pivot; each BarGroup centres its content,
+    // so the narrower side doesn't look stuck to one edge. An empty zone
+    // contributes 0 and collapses entirely.
+    function _pillWidth(cw) {
+        const lw = leftCenterGroup.empty ? 0 : leftCenterGroup.contentWidth
+        const rw = rightCenterGroupPill.empty ? 0 : rightCenterGroupPill.contentWidth
+        const raw = Math.max(lw, rw)
+        return raw <= 0 ? 0 : Math.min(raw, root.centerSideMaxWidth)
+    }
     readonly property bool cardStyleEverywhere: (Config.options?.dock?.cardStyle ?? false) && (Config.options?.sidebar?.cardStyle ?? false) && (Config.options?.bar?.cornerStyle === 3)
     readonly property color separatorColor: Appearance.colors.colOutlineVariant
 
@@ -156,6 +177,149 @@ Item { // Bar content region
         color: root.inirEverywhere ? Appearance.inir.colBorderSubtle : root.separatorColor
     }
 
+    // ═══ Modular layout engine ══════════════════════════════════════════
+    // Five zones map 1:1 to the bar's real structure. Pills size to their
+    // natural content; workspaces stays screen-centered; side pills grow
+    // outward and clamp so they never collide with the edge sections.
+    // Visibility still comes from Config.options.bar.modules.*; the arrays only
+    // define order/zone. Falls back to the classic layout until migrated.
+    readonly property bool _layoutMigrated: Config.options?.bar?.layout?.migrated === true
+    function _zone(name, fallback) {
+        const a = Config.options?.bar?.layout?.[name]
+        return (root._layoutMigrated && a && a.length >= 0) ? a : fallback
+    }
+    readonly property var _leftIds:        root._zone("left",        ["leftSidebarButton", "activeWindow"])
+    readonly property var _centerLeftIds:  root._zone("centerLeft",  ["resources", "media"])
+    readonly property var _centerIds:      root._zone("center",      ["workspaces"])
+    readonly property var _centerRightIds: root._zone("centerRight", ["clock", "utilButtons", "battery"])
+    readonly property var _rightIds:       root._zone("right",       ["rightSidebarButton", "tray", "timer", "shellUpdate", "spacer", "weather"])
+
+    function _moduleVisible(id) { return Config.options?.bar?.modules?.[id] ?? true }
+
+    // Unified id→Component map. Every zone uses this same map so ANY module can
+    // live in ANY zone (the editor allows cross-zone moves). Layout sizing hints
+    // are applied on the Loader (the real layout child) via _fillWidth/_fillHeight
+    // below — hints set inside a loaded item are ignored by the parent layout.
+    readonly property var _allComponents: ({
+        "leftSidebarButton": leftSidebarButtonComponent,
+        "activeWindow": activeWindowComponent,
+        "resources": resourcesModuleComponent,
+        "media": mediaModuleComponent,
+        "workspaces": workspacesModuleComponent,
+        "clock": clockModuleComponent,
+        "utilButtons": utilButtonsModuleComponent,
+        "battery": batteryModuleComponent,
+        "rightSidebarButton": rightSidebarButtonComponent,
+        "tray": trayComponent,
+        "timer": timerComponent,
+        "shellUpdate": shellUpdateComponent,
+        "weather": weatherComponent,
+        "spacer": spacerComponent,
+    })
+    // Which ids stretch along the bar axis. `spacer` is a pure gap;
+    // activeWindow/taskbar fill the edge section; resources fills only on the
+    // tightest screens. Centre pills size tightly to content, so clock/media do
+    // NOT fill — they sit at natural width with no leftover space.
+    function _fillWidth(id) {
+        if (id === "spacer" || id === "activeWindow") return true
+        if (id === "resources") return root.useShortenedForm === 2
+        return false
+    }
+    function _fillHeight(id) {
+        return id === "spacer" || id === "tray" || id === "workspaces" || id === "activeWindow"
+    }
+
+    Component {
+        id: resourcesModuleComponent
+        Resources {
+            visible: root._moduleVisible("resources")
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillWidth: root.useShortenedForm === 2
+            alwaysShowAllResources: root.useShortenedForm === 2
+        }
+    }
+    Component {
+        id: mediaModuleComponent
+        Media {
+            visible: root._moduleVisible("media") && root.useShortenedForm < 2
+        }
+    }
+    Component {
+        id: workspacesModuleComponent
+        Workspaces {
+            visible: root._moduleVisible("workspaces")
+            Layout.fillHeight: true
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onPressed: event => {
+                    if (event.button === Qt.RightButton)
+                        GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+                }
+            }
+        }
+    }
+    Component {
+        id: clockModuleComponent
+        ClockWidget {
+            visible: root._moduleVisible("clock")
+            showDate: ((Config.options?.bar?.verbose ?? true) && root.useShortenedForm < 2)
+        }
+    }
+    Component {
+        id: utilButtonsModuleComponent
+        UtilButtons {
+            visible: root._moduleVisible("utilButtons") && ((Config.options?.bar?.verbose ?? true) && root.useShortenedForm === 0)
+            Layout.alignment: Qt.AlignVCenter
+        }
+    }
+    Component {
+        id: batteryModuleComponent
+        BatteryIndicator {
+            visible: root._moduleVisible("battery") && (root.useShortenedForm < 2 && Battery.available)
+            Layout.alignment: Qt.AlignVCenter
+        }
+    }
+
+    // id → Component for the left edge zone.
+    Component {
+        id: leftSidebarButtonComponent
+        LeftSidebarButton {
+            visible: root._moduleVisible("leftSidebarButton")
+            Layout.alignment: Qt.AlignVCenter
+            colBackground: buttonHovered
+                ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover : Appearance.colors.colLayer1Hover)
+                : "transparent"
+        }
+    }
+    // activeWindow covers the title display and the optional taskbar (mutually
+    // exclusive: taskbar replaces the active window title).
+    // The wrapper caps its implicit width so a long title can't inflate the edge
+    // section (which would shrink centerSideMaxWidth and crush the media pill).
+    // Inside an edge section it then fills (Loader _fillWidth) and elides; inside
+    // a center pill it reports a real, bounded width so the pill isn't empty.
+    Component {
+        id: activeWindowComponent
+        Item {
+            implicitWidth: Math.min(
+                (root.taskbarEnabled ? _tbLoader.implicitWidth : _awItem.implicitWidth),
+                Appearance.sizes.barCenterSideModuleWidthShortened)
+            implicitHeight: Appearance.sizes.baseBarHeight
+            ActiveWindow {
+                id: _awItem
+                anchors.fill: parent
+                visible: root._moduleVisible("activeWindow") && root.useShortenedForm === 0 && !root.taskbarEnabled
+            }
+            Loader {
+                id: _tbLoader
+                anchors.fill: parent
+                active: root.taskbarEnabled
+                visible: active
+                sourceComponent: BarTaskbar { parentWindow: root.QsWindow.window }
+            }
+        }
+    }
+
     // Background shadow
     Loader {
         active: !root.inirEverywhere
@@ -189,6 +353,15 @@ Item { // Bar content region
         readonly property QtObject blendedColors: root.blendedColors
 
         visible: (Config.options?.bar?.showBackground ?? true) && !gameModeMinimal
+        // User-configurable background opacity (lets you make the bar translucent
+        // without changing the global style). Applied as Item.opacity so border,
+        // blurredWallpaper, inset glow and partial borders all fade together.
+        // Widgets sit OUTSIDE this Rectangle so they stay fully opaque.
+        opacity: Math.max(0, Math.min(1, Config.options?.bar?.opacity ?? 1))
+        Behavior on opacity {
+            enabled: Appearance.animationsEnabled
+            animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+        }
 
         // Color logic per global style and corner style
         color: {
@@ -332,8 +505,10 @@ Item { // Bar content region
             top: parent.top
             bottom: parent.bottom
             left: parent.left
-            right: middleSection.left
         }
+        // Extend up to the left pill's inner edge but keep at least the natural
+        // content width so the sidebar button / active window are never clipped.
+        width: Math.max(implicitWidth, middleSection.leftPillX)
         implicitWidth: leftSectionRowLayout.implicitWidth
         implicitHeight: Appearance.sizes.baseBarHeight
 
@@ -366,101 +541,109 @@ Item { // Bar content region
             anchors.rightMargin: Appearance.rounding.screenRounding
             spacing: 10
 
-            LeftSidebarButton { // Left sidebar button
-                visible: Config.options?.bar?.modules?.leftSidebarButton ?? true
-                Layout.alignment: Qt.AlignVCenter
-                colBackground: buttonHovered
-                    ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover : Appearance.colors.colLayer1Hover)
-                    : "transparent"
-            }
-
-            ActiveWindow {
-                visible: (Config.options?.bar?.modules?.activeWindow ?? true) && root.useShortenedForm === 0 && !root.taskbarEnabled
-                Layout.fillWidth: !root.taskbarEnabled
-                Layout.fillHeight: true
-            }
-
-            Loader {
-                active: root.taskbarEnabled
-                visible: active
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                sourceComponent: BarTaskbar {
-                    parentWindow: root.QsWindow.window
+            Repeater {
+                model: root._leftIds
+                delegate: Loader {
+                    required property string modelData
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.fillWidth: root._fillWidth(modelData)
+                    Layout.fillHeight: root._fillHeight(modelData)
+                    sourceComponent: root._allComponents[modelData] ?? null
                 }
             }
         }
     }
 
-    Row { // Middle section
+    Item { // Middle section — workspaces stays screen-centered; the side pills
+           // size to their natural content and grow outward from it, clamped so
+           // they never collide with the edge sections.
         id: middleSection
         anchors {
             top: parent.top
             bottom: parent.bottom
-            horizontalCenter: parent.horizontalCenter
-        }
-        spacing: 4
-
-        BarGroup {
-            id: leftCenterGroup
-            anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: root.centerSideModuleWidth
-
-            Loader {
-                active: Config.options?.bar?.modules?.resources ?? true
-                visible: active
-                Layout.fillWidth: root.useShortenedForm === 2
-                sourceComponent: Resources {
-                    alwaysShowAllResources: root.useShortenedForm === 2
-                }
-            }
-
-            Loader {
-                active: (Config.options?.bar?.modules?.media ?? true) && root.useShortenedForm < 2
-                visible: active
-                Layout.fillWidth: true
-                sourceComponent: Media {
-                }
-            }
+            left: parent.left
+            right: parent.right
         }
 
-        VerticalBarSeparator {
-            visible: Config.options?.bar.borderless
-        }
+        // Inner X edges of the side pills (BarContent coords) so the edge
+        // sections can extend up to — but never into — the center cluster.
+        readonly property real leftPillX: leftCenterGroup.width > 0 ? leftCenterGroup.x : middleCenterGroup.x
+        readonly property real rightPillEndX: rightCenterGroup.width > 0
+            ? (rightCenterGroup.x + rightCenterGroup.width)
+            : (middleCenterGroup.x + middleCenterGroup.width)
 
         BarGroup {
             id: middleCenterGroup
             anchors.verticalCenter: parent.verticalCenter
-            padding: workspacesWidget.widgetPadding
+            anchors.horizontalCenter: parent.horizontalCenter
+            padding: 4
+            // Collapse the pivot pill background when workspaces (its only
+            // default content) is hidden — leaves a tiny centred gap instead of
+            // a ghost pill. Width stays minimal so side pills still flank it.
+            visible: !empty
 
-            Workspaces {
-                id: workspacesWidget
-                visible: Config.options?.bar?.modules?.workspaces ?? true
-                Layout.fillHeight: true
-                MouseArea {
-                    // Right-click to toggle overview
-                    anchors.fill: parent
-                    acceptedButtons: Qt.RightButton
-
-                    onPressed: event => {
-                        if (event.button === Qt.RightButton) {
-                            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
-                        }
-                    }
+            Repeater {
+                model: root._centerIds
+                delegate: Loader {
+                    required property string modelData
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.fillWidth: root._fillWidth(modelData)
+                    Layout.fillHeight: root._fillHeight(modelData)
+                    sourceComponent: root._allComponents[modelData] ?? null
                 }
             }
         }
 
         VerticalBarSeparator {
-            visible: Config.options?.bar.borderless
+            id: leftSeparator
+            visible: (Config.options?.bar.borderless ?? false) && !leftCenterGroup.empty && !middleCenterGroup.empty
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: middleCenterGroup.left
+            anchors.rightMargin: 4
+            height: Appearance.sizes.baseBarHeight / 3
         }
 
-        MouseArea {
+        BarGroup {
+            id: leftCenterGroup
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: (Config.options?.bar.borderless ?? false) ? leftSeparator.left : middleCenterGroup.left
+            anchors.rightMargin: 4
+            // Collapse to nothing when this zone has no visible modules;
+            // otherwise take the symmetric target width. Modules elide/clip.
+            visible: !empty
+            implicitWidth: empty ? 0 : root._pillWidth(contentWidth)
+            clip: true
+
+            Repeater {
+                model: root._centerLeftIds
+                delegate: Loader {
+                    required property string modelData
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.fillWidth: root._fillWidth(modelData)
+                    Layout.fillHeight: root._fillHeight(modelData)
+                    sourceComponent: root._allComponents[modelData] ?? null
+                }
+            }
+        }
+
+        VerticalBarSeparator {
+            id: rightSeparator
+            visible: (Config.options?.bar.borderless ?? false) && !rightCenterGroupPill.empty && !middleCenterGroup.empty
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: middleCenterGroup.right
+            anchors.leftMargin: 4
+            height: Appearance.sizes.baseBarHeight / 3
+        }
+
+        Item {
             id: rightCenterGroup
             anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: root.centerSideModuleWidth
-            implicitHeight: rightCenterGroupContent.implicitHeight
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            anchors.left: (Config.options?.bar.borderless ?? false) ? rightSeparator.right : middleCenterGroup.right
+            anchors.leftMargin: 4
+            visible: !rightCenterGroupPill.empty
+            implicitWidth: rightCenterGroupPill.empty ? 0 : rightCenterGroupPill.width
+            implicitHeight: rightCenterGroupPill.height
+            readonly property real contentWidth: rightCenterGroupPill.contentWidth
 
             // Gesture sequence tracking for multi-tap detection
             property int _tapSeq: 0
@@ -468,35 +651,40 @@ Item { // Bar content region
             Timer { id: _tapSeqTimer; interval: 500; onTriggered: rightCenterGroup._tapSeq = 0 }
             Timer { id: _fxResetTimer; interval: 2000; onTriggered: rightCenterGroup._confirmFx = false }
 
-            onPressed: event => {
-                if (event.button === Qt.RightButton) {
-                    GlobalStates.controlPanelOpen = !GlobalStates.controlPanelOpen;
-                } else {
-                    GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
-                    _tapSeq++; _tapSeqTimer.restart()
-                    if (_tapSeq >= 3) { _confirmFx = true; _tapSeq = 0; _fxResetTimer.restart() }
+            // Pill + content — structurally identical to leftCenterGroup so it
+            // sizes to natural content and centers it the same way.
+            BarGroup {
+                id: rightCenterGroupPill
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !empty
+                implicitWidth: empty ? 0 : root._pillWidth(contentWidth)
+                clip: true
+
+                Repeater {
+                    model: root._centerRightIds
+                    delegate: Loader {
+                        required property string modelData
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.fillWidth: root._fillWidth(modelData)
+                        Layout.fillHeight: root._fillHeight(modelData)
+                        sourceComponent: root._allComponents[modelData] ?? null
+                    }
                 }
             }
 
-            BarGroup {
-                id: rightCenterGroupContent
-                anchors.fill: parent
-
-                ClockWidget {
-                    visible: Config.options?.bar?.modules?.clock ?? true
-                    showDate: ((Config.options?.bar?.verbose ?? true) && root.useShortenedForm < 2)
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.fillWidth: true
-                }
-
-                UtilButtons {
-                    visible: (Config.options?.bar?.modules?.utilButtons ?? true) && ((Config.options?.bar?.verbose ?? true) && root.useShortenedForm === 0)
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                BatteryIndicator {
-                    visible: (Config.options?.bar?.modules?.battery ?? true) && (root.useShortenedForm < 2 && Battery.available)
-                    Layout.alignment: Qt.AlignVCenter
+            // Interaction overlay (sidebar toggle / control panel / triple-tap fx)
+            MouseArea {
+                anchors.fill: rightCenterGroupPill
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                z: -1
+                onPressed: event => {
+                    if (event.button === Qt.RightButton) {
+                        GlobalStates.controlPanelOpen = !GlobalStates.controlPanelOpen;
+                    } else {
+                        GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
+                        rightCenterGroup._tapSeq++; _tapSeqTimer.restart()
+                        if (rightCenterGroup._tapSeq >= 3) { rightCenterGroup._confirmFx = true; rightCenterGroup._tapSeq = 0; _fxResetTimer.restart() }
+                    }
                 }
             }
 
@@ -540,9 +728,9 @@ Item { // Bar content region
         anchors {
             top: parent.top
             bottom: parent.bottom
-            left: middleSection.right
             right: parent.right
         }
+        width: Math.max(implicitWidth, root.width - middleSection.rightPillEndX)
         implicitWidth: rightSectionRowLayout.implicitWidth
         implicitHeight: Appearance.sizes.baseBarHeight
 
@@ -577,136 +765,143 @@ Item { // Bar content region
             spacing: 5
             layoutDirection: Qt.RightToLeft
 
-            RippleButton { // Right sidebar button
-                id: rightSidebarButton
-                visible: Config.options?.bar?.modules?.rightSidebarButton ?? true
-
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                Layout.fillWidth: false
-
-                implicitWidth: indicatorsRowLayout.implicitWidth + 10 * 2
-                implicitHeight: indicatorsRowLayout.implicitHeight + 5 * 2
-
-                buttonRadius: Appearance.rounding.full
-
-                colBackground: buttonHovered
-                    ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover : Appearance.colors.colLayer1Hover)
-                    : "transparent"
-                colBackgroundHover: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover : Appearance.colors.colLayer1Hover
-                colRipple: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colLayer1Active
-                colBackgroundToggled: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colSecondaryContainer
-                colBackgroundToggledHover: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurfaceHover : Appearance.colors.colSecondaryContainerHover
-                colRippleToggled: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colSecondaryContainerActive
-
-                toggled: GlobalStates.sidebarRightOpen
-                property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
-
-                Behavior on colText {
-                    animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+            Repeater {
+                model: root._rightIds
+                delegate: Loader {
+                    required property string modelData
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.fillWidth: root._fillWidth(modelData)
+                    Layout.fillHeight: root._fillHeight(modelData)
+                    Layout.leftMargin: modelData === "weather" ? 4 : 0
+                    sourceComponent: root._allComponents[modelData] ?? null
                 }
+            }
+        }
+    }
 
-                onPressed: {
-                    GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
-                }
+    // id → Component for the right edge zone. The RowLayout is RTL: the first id
+    // renders nearest the screen edge. `spacer` is a flexible gap.
+    // The right edge zone renders RTL: the first id sits nearest the screen
+    // edge. `spacer` is a flexible gap.
+    Component { id: timerComponent; TimerIndicator { Layout.alignment: Qt.AlignVCenter } }
+    Component { id: shellUpdateComponent; ShellUpdateIndicator { Layout.alignment: Qt.AlignVCenter } }
+    Component { id: spacerComponent; Item { Layout.fillWidth: true; Layout.fillHeight: true } }
+    Component {
+        id: trayComponent
+        SysTray {
+            visible: root._moduleVisible("sysTray") && root.useShortenedForm === 0
+            Layout.fillWidth: false
+            Layout.fillHeight: true
+            invertSide: Config.options?.bar?.bottom ?? false
+        }
+    }
+    Component {
+        id: weatherComponent
+        Loader {
+            active: root._moduleVisible("weather") && (Config.options?.bar?.weather?.enable ?? false)
+            visible: active
+            sourceComponent: BarGroup { WeatherBar {} }
+        }
+    }
+    Component {
+        id: rightSidebarButtonComponent
+        RippleButton { // Right sidebar button
+            id: rightSidebarButton
+            visible: root._moduleVisible("rightSidebarButton")
 
-                RowLayout {
-                    id: indicatorsRowLayout
-                    anchors.centerIn: parent
-                    property real realSpacing: 15
-                    spacing: 0
+            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+            Layout.fillWidth: false
 
-                    Revealer {
-                        reveal: Audio.sink?.audio?.muted ?? false
-                        Layout.fillHeight: true
-                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
-                        Behavior on Layout.rightMargin {
-                            animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
-                        }
-                        MaterialSymbol {
-                            text: "volume_off"
-                            iconSize: Appearance.font.pixelSize.larger
-                            color: rightSidebarButton.colText
-                        }
-                    }
-                    Revealer {
-                        reveal: Audio.micMuted
-                        Layout.fillHeight: true
-                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
-                        Behavior on Layout.rightMargin {
-                            animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
-                        }
-                        MaterialSymbol {
-                            text: "mic_off"
-                            iconSize: Appearance.font.pixelSize.larger
-                            color: rightSidebarButton.colText
-                        }
-                    }
-                    HyprlandXkbIndicator {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.rightMargin: KeyboardIndicators.hasPanelIndicators ? indicatorsRowLayout.realSpacing : 0
-                        color: rightSidebarButton.colText
-                    }
-                    Revealer {
-                        reveal: Notifications.silent || Notifications.unread > 0
-                        Layout.fillHeight: true
-                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
-                        implicitHeight: reveal ? notificationUnreadCount.implicitHeight : 0
-                        implicitWidth: reveal ? notificationUnreadCount.implicitWidth : 0
-                        Behavior on Layout.rightMargin {
-                            enabled: Appearance.animationsEnabled
-                            animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
-                        }
-                        NotificationUnreadCount {
-                            id: notificationUnreadCount
-                        }
+            implicitWidth: indicatorsRowLayout.implicitWidth + 10 * 2
+            implicitHeight: indicatorsRowLayout.implicitHeight + 5 * 2
+
+            buttonRadius: Appearance.rounding.full
+
+            colBackground: buttonHovered
+                ? (Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover : Appearance.colors.colLayer1Hover)
+                : "transparent"
+            colBackgroundHover: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover : Appearance.colors.colLayer1Hover
+            colRipple: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colLayer1Active
+            colBackgroundToggled: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colSecondaryContainer
+            colBackgroundToggledHover: Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurfaceHover : Appearance.colors.colSecondaryContainerHover
+            colRippleToggled: Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive : Appearance.colors.colSecondaryContainerActive
+
+            toggled: GlobalStates.sidebarRightOpen
+            property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
+
+            Behavior on colText {
+                animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+            }
+
+            onPressed: {
+                GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
+            }
+
+            RowLayout {
+                id: indicatorsRowLayout
+                anchors.centerIn: parent
+                property real realSpacing: 15
+                spacing: 0
+
+                Revealer {
+                    reveal: Audio.sink?.audio?.muted ?? false
+                    Layout.fillHeight: true
+                    Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
+                    Behavior on Layout.rightMargin {
+                        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
                     }
                     MaterialSymbol {
-                        text: Network.materialSymbol
+                        text: "volume_off"
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
-                        Layout.rightMargin: BluetoothStatus.available ? indicatorsRowLayout.realSpacing : 0
-                    }
-                    Revealer {
-                        reveal: BluetoothStatus.available
-                        Layout.rightMargin: indicatorsRowLayout.realSpacing
-                        MaterialSymbol {
-                            text: BluetoothStatus.activeIcon
-                            iconSize: Appearance.font.pixelSize.larger
-                            color: rightSidebarButton.colText
-                        }
                     }
                 }
-            }
-
-            SysTray {
-                visible: (Config.options?.bar?.modules?.sysTray ?? true) && root.useShortenedForm === 0
-                Layout.fillWidth: false
-                Layout.fillHeight: true
-                invertSide: Config.options?.bar?.bottom ?? false
-            }
-
-            // Timer indicator
-            TimerIndicator {
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            // iNiR shell update indicator
-            ShellUpdateIndicator {
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
-
-            // Weather
-            Loader {
-                Layout.leftMargin: 4
-                active: (Config.options?.bar?.modules?.weather ?? true) && (Config.options?.bar?.weather?.enable ?? false)
-
-                sourceComponent: BarGroup {
-                    WeatherBar {}
+                Revealer {
+                    reveal: Audio.micMuted
+                    Layout.fillHeight: true
+                    Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
+                    Behavior on Layout.rightMargin {
+                        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+                    }
+                    MaterialSymbol {
+                        text: "mic_off"
+                        iconSize: Appearance.font.pixelSize.larger
+                        color: rightSidebarButton.colText
+                    }
+                }
+                HyprlandXkbIndicator {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.rightMargin: KeyboardIndicators.hasPanelIndicators ? indicatorsRowLayout.realSpacing : 0
+                    color: rightSidebarButton.colText
+                }
+                Revealer {
+                    reveal: Notifications.silent || Notifications.unread > 0
+                    Layout.fillHeight: true
+                    Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
+                    implicitHeight: reveal ? notificationUnreadCount.implicitHeight : 0
+                    implicitWidth: reveal ? notificationUnreadCount.implicitWidth : 0
+                    Behavior on Layout.rightMargin {
+                        enabled: Appearance.animationsEnabled
+                        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+                    }
+                    NotificationUnreadCount {
+                        id: notificationUnreadCount
+                    }
+                }
+                MaterialSymbol {
+                    text: Network.materialSymbol
+                    iconSize: Appearance.font.pixelSize.larger
+                    color: rightSidebarButton.colText
+                    Layout.rightMargin: BluetoothStatus.available ? indicatorsRowLayout.realSpacing : 0
+                }
+                Revealer {
+                    reveal: BluetoothStatus.available
+                    Layout.rightMargin: indicatorsRowLayout.realSpacing
+                    MaterialSymbol {
+                        text: BluetoothStatus.activeIcon
+                        iconSize: Appearance.font.pixelSize.larger
+                        color: rightSidebarButton.colText
+                    }
                 }
             }
         }

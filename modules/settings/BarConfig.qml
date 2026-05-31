@@ -183,6 +183,45 @@ ContentPage {
 
             SettingsDivider {}
 
+            // ── Geometry: how big and how solid the bar should look ──
+            ConfigRow {
+                uniform: true
+                ConfigSpinBox {
+                    icon: "height"
+                    text: Translation.tr("Bar height (px)")
+                    value: Config.options?.bar?.height ?? 40
+                    from: 24
+                    to: 80
+                    stepSize: 2
+                    onValueChanged: Config.setNestedValue("bar.height", value)
+                    StyledToolTip {
+                        text: Translation.tr("Content height of the bar before font scaling. Default is 40.")
+                    }
+                }
+                ConfigSpinBox {
+                    icon: "opacity"
+                    text: Translation.tr("Bar opacity (%)")
+                    value: Math.round((Config.options?.bar?.opacity ?? 1) * 100)
+                    from: 20
+                    to: 100
+                    stepSize: 5
+                    onValueChanged: Config.setNestedValue("bar.opacity", value / 100)
+                    enabled: Config.options?.bar?.showBackground ?? true
+                    opacity: enabled ? 1 : 0.5
+                    StyledToolTip {
+                        text: Translation.tr("Background fill opacity. Widgets stay fully opaque.")
+                    }
+                }
+            }
+
+            ConflictNote {
+                visible: !(Config.options?.bar?.showBackground ?? true)
+                icon: "info"
+                text: Translation.tr("Opacity has no effect while ‘Show background’ is off.")
+            }
+
+            SettingsDivider {}
+
             ConfigRow {
                 uniform: true
 
@@ -224,6 +263,72 @@ ContentPage {
                 text: Translation.tr("Seamless group style may look odd with Card corner style.")
             }
 
+            // Auto-hide details — only visible while auto-hide is on. Lets the
+            // user tune the reveal trigger and Super-press peek without hunting
+            // through Advanced.
+            Item {
+                visible: root.isAutoHide
+                Layout.fillWidth: true
+                implicitHeight: autoHideDetails.implicitHeight
+                ColumnLayout {
+                    id: autoHideDetails
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    spacing: 8
+
+                    SettingsDivider {}
+
+                    ConfigRow {
+                        uniform: true
+                        ConfigSpinBox {
+                            icon: "linear_scale"
+                            text: Translation.tr("Hover trigger height (px)")
+                            value: Config.options?.bar?.autoHide?.hoverRegionWidth ?? 2
+                            from: 1
+                            to: 12
+                            stepSize: 1
+                            onValueChanged: Config.setNestedValue("bar.autoHide.hoverRegionWidth", value)
+                            StyledToolTip {
+                                text: Translation.tr("How thick the screen-edge zone is that reveals the hidden bar.")
+                            }
+                        }
+                        ConfigSpinBox {
+                            icon: "timer"
+                            text: Translation.tr("Super peek delay (ms)")
+                            value: Config.options?.bar?.autoHide?.showWhenPressingSuper?.delay ?? 140
+                            from: 0
+                            to: 800
+                            stepSize: 20
+                            onValueChanged: Config.setNestedValue("bar.autoHide.showWhenPressingSuper.delay", value)
+                            enabled: Config.options?.bar?.autoHide?.showWhenPressingSuper?.enable ?? true
+                            opacity: enabled ? 1 : 0.5
+                        }
+                    }
+
+                    ConfigRow {
+                        uniform: true
+                        SettingsSwitch {
+                            buttonIcon: "keyboard_command_key"
+                            text: Translation.tr("Peek on Super press")
+                            checked: Config.options?.bar?.autoHide?.showWhenPressingSuper?.enable ?? true
+                            onCheckedChanged: Config.setNestedValue("bar.autoHide.showWhenPressingSuper.enable", checked)
+                            StyledToolTip {
+                                text: Translation.tr("Reveal the bar while the Super key is held.")
+                            }
+                        }
+                        SettingsSwitch {
+                            buttonIcon: "open_in_full"
+                            text: Translation.tr("Push windows when shown")
+                            checked: Config.options?.bar?.autoHide?.pushWindows ?? false
+                            onCheckedChanged: Config.setNestedValue("bar.autoHide.pushWindows", checked)
+                            StyledToolTip {
+                                text: Translation.tr("Reserve screen space when revealed instead of overlaying windows.")
+                            }
+                        }
+                    }
+                }
+            }
+
             SettingsDivider {}
 
             SettingsSwitch {
@@ -243,6 +348,28 @@ ContentPage {
                 onCheckedChanged: Config.setNestedValue("bar.showScrollHints", checked)
                 StyledToolTip {
                     text: Translation.tr("Show brightness/volume icons when hovering bar edges")
+                }
+            }
+
+            SettingsSwitch {
+                buttonIcon: "unfold_more"
+                text: Translation.tr("Verbose mode")
+                checked: Config.options?.bar?.verbose ?? true
+                onCheckedChanged: Config.setNestedValue("bar.verbose", checked)
+                StyledToolTip {
+                    text: Translation.tr("Wider center groups, plus the date next to the clock, the media title and the utility buttons. Off = compact bar.")
+                }
+            }
+
+            SettingsSwitch {
+                buttonIcon: "deployed_code"
+                text: Translation.tr("Float style drop shadow")
+                checked: Config.options?.bar?.floatStyleShadow ?? true
+                onCheckedChanged: Config.setNestedValue("bar.floatStyleShadow", checked)
+                enabled: root.isFloatStyle || root.isCardStyle
+                opacity: enabled ? 1 : 0.5
+                StyledToolTip {
+                    text: Translation.tr("Render a soft shadow under the bar in Float / Card corner styles.")
                 }
             }
 
@@ -371,6 +498,33 @@ ContentPage {
                 }
             }
 
+            // Left sidebar button icon. "distro" auto-detects from /etc/os-release;
+            // anything else looks up <name>-symbolic in the icon theme.
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                visible: Config.options?.bar?.modules?.leftSidebarButton ?? true
+                StyledText {
+                    Layout.fillWidth: true
+                    text: Translation.tr("Left sidebar icon")
+                    color: Appearance.colors.colSubtext
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                }
+                MaterialTextField {
+                    Layout.fillWidth: true
+                    placeholderText: "distro"
+                    text: Config.options?.bar?.topLeftIcon ?? "distro"
+                    onTextChanged: Config.setNestedValue("bar.topLeftIcon", text)
+                }
+                StyledText {
+                    Layout.fillWidth: true
+                    text: Translation.tr("‘distro’ auto-detects your distribution. Otherwise enter any icon name (looked up as <name>-symbolic).")
+                    color: Appearance.colors.colSubtext
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    wrapMode: Text.WordWrap
+                }
+            }
+
             ConfigRow {
                 uniform: true
                 SettingsSwitch {
@@ -485,6 +639,20 @@ ContentPage {
                 color: Appearance.colors.colSubtext
                 font.pixelSize: Appearance.font.pixelSize.smaller
             }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // MODULE LAYOUT (reorder / relocate)
+    // ═══════════════════════════════════════════════════════════════════
+    SettingsCardSection {
+        visible: root.isIiActive
+        expanded: false
+        icon: "reorder"
+        title: Translation.tr("Bar module layout")
+
+        SettingsGroup {
+            BarModuleOrderEditor {}
         }
     }
 

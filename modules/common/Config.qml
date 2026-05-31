@@ -1141,6 +1141,8 @@ Singleton {
                     }
                 }
                 property bool bottom: false // Instead of top
+                property int height: 40 // Bar content height in px (pre-scale). 0 keeps the theme default (40). Range: 24–80.
+                property real opacity: 1.0 // Background opacity (0–1). Lets you make the bar translucent without changing global style.
                 property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
                 property int customRounding: -1 // -1: use global theme rounding | 0+: override bar rounding (px)
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
@@ -1183,17 +1185,37 @@ Singleton {
                     property string utilButtons: "end"
                     property string battery: "end"
                 }
+                // Deprecated: kept so old config.json loads without error until
+                // migration 028 removes them. Not consumed by the bar.
                 property JsonObject modulesLayout: JsonObject {
-                    // Global ordering of central bar modules.
-                    // Valid ids: resources, media, workspaces, clock, utilButtons, battery
                     property list<string> order: ["resources", "media", "workspaces", "clock", "utilButtons", "battery"]
                 }
                 property JsonObject edgeModulesLayout: JsonObject {
-                    // Ordering of side modules (left and right sections)
-                    // Left side valid ids: leftSidebarButton, activeWindow
-                    // Right side valid ids: rightSidebarButton, sysTray, weather
                     property list<string> leftOrder: ["leftSidebarButton", "activeWindow"]
                     property list<string> rightOrder: ["rightSidebarButton", "sysTray", "weather"]
+                }
+                // Modular bar layout — widget ids per structural zone.
+                // Zones map 1:1 to the bar's real sections so workspaces stays
+                // screen-centered and pill surfaces / scroll areas are preserved:
+                //   left        → left edge section (scroll=brightness, click=left sidebar)
+                //   centerLeft  → left central pill group
+                //   center      → the centered pivot group (normally workspaces)
+                //   centerRight → right central pill group (scroll, triple-tap fx)
+                //   right       → right edge section (click=right sidebar)
+                // Known ids: leftSidebarButton, activeWindow, taskbar, resources,
+                //   media, workspaces, clock, utilButtons, battery, weather, tray,
+                //   rightSidebarButton.
+                property JsonObject layout: JsonObject {
+                    property list<string> left: ["leftSidebarButton", "activeWindow"]
+                    property list<string> centerLeft: ["resources", "media"]
+                    property list<string> center: ["workspaces"]
+                    property list<string> centerRight: ["clock", "utilButtons", "battery"]
+                    property list<string> right: ["rightSidebarButton", "tray", "timer", "shellUpdate", "spacer", "weather"]
+                    // Set true once the old fixed layout has been translated into
+                    // the arrays above (handled by a migration). Until then the
+                    // bar falls back to its classic hardcoded layout so existing
+                    // users are never affected.
+                    property bool migrated: false
                 }
                 property JsonObject resources: JsonObject {
                     property bool showMemoryIndicator: true
