@@ -39,7 +39,25 @@ Singleton {
         visib: "10 km",
         press: "1013 hPa",
         temp: "--°C",
-        tempFeelsLike: "--°C"
+        tempFeelsLike: "--°C",
+        lastRefresh: "--:--",
+        tempMax: "",
+        tempMin: "",
+        forecast: [], // [{ dayName, code, hi, lo, hiVal, loVal }]
+        hourly: []    // [{ label, temp, code, isNight }]
+    })
+
+    // Air quality is a separate Open-Meteo endpoint, fetched after weather and
+    // kept in its own property so a weather refresh never wipes it (data is
+    // reassigned wholesale on each refresh). available=false → UI shows nothing.
+    property var airQuality: ({
+        available: false,
+        aqi: "",
+        scale: "",
+        label: "",
+        pm25: "",
+        pm10: "",
+        ozone: ""
     })
     readonly property string visibleCity: {
         if (root.hideLocation)
@@ -60,6 +78,98 @@ Singleton {
     function isNightNow(): bool {
         const h = new Date().getHours();
         return h < 6 || h >= 18;
+    }
+
+    // ── Live sun/moon context ─────────────────────────────────────────────
+    // Ticks once a minute so sun progress and moon age stay current without a
+    // weather refresh. Raw ms, never gated on animationsEnabled (P0-10).
+    property int _clockTick: 0
+    Timer {
+        id: clockTickTimer
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: root._clockTick++
+    }
+
+    // Parse "HH:MM", "H:MM", or "hh:MM AM/PM" into minutes-of-day; -1 if unknown.
+    function _timeToMinutes(s): int {
+        if (!s) return -1
+        const str = String(s).trim()
+        const ampm = str.match(/(\d{1,2}):(\d{2})\s*([AaPp][Mm])/)
+        if (ampm) {
+            let h = parseInt(ampm[1]); const m = parseInt(ampm[2])
+            const pm = ampm[3].toLowerCase() === "pm"
+            if (h === 12) h = 0
+            if (pm) h += 12
+            return h * 60 + m
+        }
+        const hm = str.match(/(\d{1,2}):(\d{2})/)
+        if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2])
+        return -1
+    }
+
+    // 0..1 progress from sunrise to sunset (0 before sunrise, 1 after sunset).
+    readonly property real sunProgress: {
+        root._clockTick // recompute every minute
+        const sr = root._timeToMinutes(root.data?.sunrise)
+        const ss = root._timeToMinutes(root.data?.sunset)
+        if (sr < 0 || ss < 0 || ss <= sr) return 0
+        const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes()
+        if (nowMin <= sr) return 0
+        if (nowMin >= ss) return 1
+        return (nowMin - sr) / (ss - sr)
+    }
+    readonly property string sunState: {
+        root._clockTick
+        const sr = root._timeToMinutes(root.data?.sunrise)
+        const ss = root._timeToMinutes(root.data?.sunset)
+        if (sr < 0 || ss < 0) return root.isNightNow() ? "night" : "day"
+        const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes()
+        return (nowMin >= sr && nowMin < ss) ? "day" : "night"
+    }
+
+    // Local lunar phase from the synodic cycle. Open-Meteo does not expose moon
+    // phase, so this is computed honestly rather than faked from an API field.
+    readonly property real moonAge: {
+        root._clockTick
+        const now = new Date()
+        const ref = Date.UTC(2000, 0, 6, 18, 14, 0) // known new moon (UTC)
+        const synodic = 29.530588853
+        let age = ((now.getTime() - ref) / 86400000) % synodic
+        if (age < 0) age += synodic
+        return age
+    }
+    readonly property real moonIllumination: (1 - Math.cos(2 * Math.PI * (root.moonAge / 29.530588853))) / 2
+    readonly property string moonPhaseName: {
+        const age = root.moonAge
+        if (age < 1.84566) return Translation.tr("New Moon")
+        if (age < 5.53699) return Translation.tr("Waxing Crescent")
+        if (age < 9.22831) return Translation.tr("First Quarter")
+        if (age < 12.91963) return Translation.tr("Waxing Gibbous")
+        if (age < 16.61096) return Translation.tr("Full Moon")
+        if (age < 20.30228) return Translation.tr("Waning Gibbous")
+        if (age < 23.99361) return Translation.tr("Last Quarter")
+        if (age < 27.68493) return Translation.tr("Waning Crescent")
+        return Translation.tr("New Moon")
+    }
+
+    // ── Air quality (US/EU AQI) labels ───────────────────────────────────
+    function _euAqiLabel(v): string {
+        if (v <= 20) return Translation.tr("Good")
+        if (v <= 40) return Translation.tr("Fair")
+        if (v <= 60) return Translation.tr("Moderate")
+        if (v <= 80) return Translation.tr("Poor")
+        if (v <= 100) return Translation.tr("Very poor")
+        return Translation.tr("Extremely poor")
+    }
+    function _usAqiLabel(v): string {
+        if (v <= 50) return Translation.tr("Good")
+        if (v <= 100) return Translation.tr("Moderate")
+        if (v <= 150) return Translation.tr("Unhealthy for sensitive groups")
+        if (v <= 200) return Translation.tr("Unhealthy")
+        if (v <= 300) return Translation.tr("Very unhealthy")
+        return Translation.tr("Hazardous")
     }
 
     function describeWeather(code): string {
@@ -149,8 +259,49 @@ Singleton {
             result.press = (current.pressure ?? 0) + " hPa";
         }
 
+        // Daily + hourly forecast from wttr.in j1 `weather` array
+        const days = Array.isArray(apiData.weather) ? apiData.weather : []
+        const uscs = root.useUSCS
+        const tUnit = uscs ? "°F" : "°C"
+        let forecast = []
+        for (let i = 0; i < days.length; i++) {
+            const d = days[i]
+            const hi = uscs ? d.maxtempF : d.maxtempC
+            const lo = uscs ? d.mintempF : d.mintempC
+            const code = d?.hourly?.[4]?.weatherCode ?? d?.hourly?.[0]?.weatherCode ?? "113"
+            forecast.push({
+                dayName: i === 0 ? Translation.tr("Today") : root._dayName(d.date),
+                code: String(code),
+                hi: (hi ?? "--") + tUnit, lo: (lo ?? "--") + tUnit,
+                hiVal: parseFloat(hi), loVal: parseFloat(lo)
+            })
+        }
+        result.forecast = forecast
+        if (forecast.length > 0) { result.tempMax = forecast[0].hi; result.tempMin = forecast[0].lo }
+
+        // Hourly: flatten today+tomorrow, keep upcoming 3-hourly slots
+        let hourly = []
+        const nowH = new Date().getHours()
+        for (let di = 0; di < Math.min(2, days.length); di++) {
+            const hrs = days[di]?.hourly ?? []
+            for (let hi2 = 0; hi2 < hrs.length; hi2++) {
+                const h = hrs[hi2]
+                const hour = Math.floor(parseInt(h.time ?? "0") / 100)
+                if (di === 0 && hour < nowH - 1) continue
+                hourly.push({
+                    label: (hour < 10 ? "0" + hour : "" + hour) + ":00",
+                    temp: (uscs ? h.tempF : h.tempC) + "°",
+                    code: String(h.weatherCode ?? "113"),
+                    isNight: hour < 6 || hour >= 19
+                })
+            }
+        }
+        result.hourly = hourly.slice(0, 8)
+
+        result.lastRefresh = Qt.formatTime(new Date(), "hh:mm");
         root.data = result;
         console.info("[Weather] Updated:", result.temp, root.redactedLogCity(result.city));
+        root.fetchAirQuality();
     }
 
     function _degToCompass(deg): string {
@@ -158,6 +309,29 @@ Singleton {
         const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
         const idx = Math.round(((deg % 360) / 22.5)) % 16
         return dirs[idx]
+    }
+
+    // Open-Meteo uses WMO codes; the rest of the app speaks wttr.in codes
+    // (for icons + descriptions). Map so both providers render consistently.
+    function _wmoToWttr(code): string {
+        const c = parseInt(code)
+        const m = {
+            0: "113", 1: "116", 2: "116", 3: "122",
+            45: "143", 48: "248",
+            51: "263", 53: "266", 55: "281", 56: "281", 57: "284",
+            61: "293", 63: "299", 65: "302", 66: "311", 67: "314",
+            71: "323", 73: "329", 75: "335", 77: "368",
+            80: "353", 81: "356", 82: "359", 85: "368", 86: "371",
+            95: "200", 96: "386", 99: "392"
+        }
+        return m[c] ?? "113"
+    }
+
+    // Short localized weekday from an ISO-ish date string ("2026-06-07").
+    function _dayName(dateStr): string {
+        const d = new Date(dateStr)
+        if (isNaN(d.getTime())) return ""
+        return Qt.formatDate(d, "ddd")
     }
 
     function refineOpenMeteoData(apiData): void {
@@ -186,8 +360,47 @@ Singleton {
         result.visib = (current.visibility ?? 0) + " " + (units.visibility ?? (root.useUSCS ? "mi" : "km"))
         result.press = (current.pressure_msl ?? 0) + " " + (units.pressure_msl ?? (root.useUSCS ? "inHg" : "hPa"))
 
+        // Daily forecast
+        const tUnit2 = units.temperature_2m ?? (root.useUSCS ? "°F" : "°C")
+        const dCodes = daily?.weather_code ?? []
+        const dHi = daily?.temperature_2m_max ?? []
+        const dLo = daily?.temperature_2m_min ?? []
+        const dTimes = daily?.time ?? []
+        let forecast = []
+        for (let i = 0; i < dTimes.length; i++) {
+            forecast.push({
+                dayName: i === 0 ? Translation.tr("Today") : root._dayName(dTimes[i]),
+                code: root._wmoToWttr(dCodes[i]),
+                hi: (Math.round(dHi[i] ?? 0)) + tUnit2, lo: (Math.round(dLo[i] ?? 0)) + tUnit2,
+                hiVal: dHi[i], loVal: dLo[i]
+            })
+        }
+        result.forecast = forecast
+        if (forecast.length > 0) { result.tempMax = forecast[0].hi; result.tempMin = forecast[0].lo }
+
+        // Hourly forecast — upcoming slots from now
+        const hTimes = apiData?.hourly?.time ?? []
+        const hTemps = apiData?.hourly?.temperature_2m ?? []
+        const hCodes = apiData?.hourly?.weather_code ?? []
+        const nowMs = new Date().getTime()
+        let hourly = []
+        for (let i = 0; i < hTimes.length && hourly.length < 8; i++) {
+            const t = new Date(hTimes[i])
+            if (isNaN(t.getTime()) || t.getTime() < nowMs - 3600000) continue
+            const hour = t.getHours()
+            hourly.push({
+                label: Qt.formatTime(t, "hh:mm"),
+                temp: Math.round(hTemps[i] ?? 0) + "°",
+                code: root._wmoToWttr(hCodes[i]),
+                isNight: hour < 6 || hour >= 19
+            })
+        }
+        result.hourly = hourly
+
+        result.lastRefresh = Qt.formatTime(new Date(), "hh:mm")
         root.data = result
         console.info("[Weather] Updated via Open-Meteo:", result.temp, root.redactedLogCity(result.city))
+        root.fetchAirQuality()
     }
 
     function fetchWeatherFallback(): void {
@@ -205,7 +418,9 @@ Singleton {
         const url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat
             + "&longitude=" + lon
             + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,pressure_msl,wind_speed_10m,wind_direction_10m,weather_code,visibility"
-            + "&daily=sunrise,sunset"
+            + "&hourly=temperature_2m,weather_code"
+            + "&daily=sunrise,sunset,weather_code,temperature_2m_max,temperature_2m_min"
+            + "&forecast_days=7"
             + "&timezone=auto"
             + "&temperature_unit=" + tempUnit
             + "&wind_speed_unit=" + windUnit
@@ -214,6 +429,48 @@ Singleton {
 
         openMeteoFetcher.command = ["/usr/bin/curl", "-s", "--max-time", "15", url]
         openMeteoFetcher.running = true
+    }
+
+    // Air quality — separate Open-Meteo endpoint. Best-effort: requires
+    // coordinates, never blocks weather, never feeds the weather retry loop.
+    function fetchAirQuality(): void {
+        const lat = root.location.lat
+        const lon = root.location.lon
+        if ((lat === 0 && lon === 0) || airQualityFetcher.running) return
+
+        const url = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + lat
+            + "&longitude=" + lon
+            + "&current=european_aqi,us_aqi,pm10,pm2_5,ozone"
+            + "&timezone=auto"
+
+        airQualityFetcher.command = ["/usr/bin/curl", "-s", "--max-time", "15", url]
+        airQualityFetcher.running = true
+    }
+
+    function _markAqiUnavailable(): void {
+        root.airQuality = Object.assign({}, root.airQuality, { available: false })
+    }
+
+    function refineAirQuality(apiData): void {
+        const current = apiData?.current
+        if (!current) { root._markAqiUnavailable(); return }
+
+        const units = apiData?.current_units ?? {}
+        const usMode = root.useUSCS
+        const aqiVal = usMode ? current.us_aqi : current.european_aqi
+        if (aqiVal === undefined || aqiVal === null) { root._markAqiUnavailable(); return }
+
+        const pmUnit = units.pm2_5 ?? "µg/m³"
+        root.airQuality = {
+            available: true,
+            aqi: String(Math.round(aqiVal)),
+            scale: usMode ? "US AQI" : "EAQI",
+            label: usMode ? root._usAqiLabel(aqiVal) : root._euAqiLabel(aqiVal),
+            pm25: (current.pm2_5 ?? "--") + " " + pmUnit,
+            pm10: (current.pm10 ?? "--") + " " + (units.pm10 ?? pmUnit),
+            ozone: (current.ozone ?? "--") + " " + (units.ozone ?? pmUnit)
+        }
+        console.info("[Weather] Air quality updated:", root.airQuality.aqi, root.airQuality.scale)
     }
 
     // Resolve location: manual coords > manual city > GPS > IP auto-detect
@@ -314,6 +571,7 @@ Singleton {
         root._emptyResponseCount = 0;
         root._primaryFailCount = 0;
         root._primaryFailUntil = 0;
+        root._markAqiUnavailable();
         if (root.hasRunningRequests()) {
             root._forceRefreshPending = true;
             pendingForceRefreshTimer.restart();
@@ -714,7 +972,8 @@ Singleton {
                     const weatherPayload = parsed?.data ?? parsed ?? {}
                     const normalized = {
                         current: weatherPayload?.current ?? weatherPayload?.current_condition?.[0],
-                        astronomy: weatherPayload?.astronomy ?? weatherPayload?.weather?.[0]?.astronomy?.[0]
+                        astronomy: weatherPayload?.astronomy ?? weatherPayload?.weather?.[0]?.astronomy?.[0],
+                        weather: weatherPayload?.weather
                     }
                     root.refineData(normalized);
                     root._emptyResponseCount = 0;
@@ -769,6 +1028,34 @@ Singleton {
             if (code !== 0) {
                 console.warn("[Weather] Open-Meteo fetch failed, code:", code)
                 retryTimer.start()
+            }
+        }
+    }
+
+    // Air quality fetcher — failures are non-fatal and never touch retryTimer
+    // (so a flaky AQI endpoint can't disturb the working weather loop).
+    Process {
+        id: airQualityFetcher
+        command: ["/usr/bin/curl", "-s", "--max-time", "15", ""]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const payload = text.trim()
+                if (payload.length === 0 || !payload.startsWith("{")) {
+                    root._markAqiUnavailable()
+                    return
+                }
+                try {
+                    root.refineAirQuality(JSON.parse(payload))
+                } catch (e) {
+                    console.info("[Weather] Air quality parse error (non-fatal)")
+                    root._markAqiUnavailable()
+                }
+            }
+        }
+        onExited: (code) => {
+            if (code !== 0) {
+                console.info("[Weather] Air quality fetch failed (non-fatal), code:", code)
+                root._markAqiUnavailable()
             }
         }
     }

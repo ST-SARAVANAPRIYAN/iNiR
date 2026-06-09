@@ -1070,7 +1070,7 @@ ContentPage {
                 title: Translation.tr("Right Sidebar")
                 tooltip: Translation.tr("Toggle which widgets appear in the right sidebar")
 
-                readonly property var defaults: ["calendar", "todo", "notepad", "calculator", "sysmon", "timer"]
+                readonly property var defaults: ["calendar", "todo", "notepad", "calculator", "sysmon", "weather", "timer"]
 
                 function isEnabled(widgetId) {
                     return (Config.options?.sidebar?.right?.enabledWidgets ?? defaults).includes(widgetId)
@@ -1146,6 +1146,15 @@ ContentPage {
                     Component.onCompleted: checked = rightSidebarWidgets.isEnabled("sysmon")
                     onClicked: {
                         rightSidebarWidgets.setWidget("sysmon", checked)
+                    }
+                }
+
+                SettingsSwitch {
+                    buttonIcon: "partly_cloudy_day"
+                    text: Translation.tr("Weather")
+                    Component.onCompleted: checked = rightSidebarWidgets.isEnabled("weather")
+                    onClicked: {
+                        rightSidebarWidgets.setWidget("weather", checked)
                     }
                 }
 

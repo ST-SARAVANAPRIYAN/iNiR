@@ -11,6 +11,7 @@ import qs.modules.sidebarRight.calculator
 import qs.modules.sidebarRight.sysmon
 import qs.modules.sidebarRight.screenTime
 import qs.modules.sidebarRight.events
+import qs.modules.sidebarRight.weather
 import QtQuick
 import QtQuick.Layouts
 // import Qt5Compat.GraphicalEffects // Might not be available, using standard Rectangle gradient instead
@@ -47,6 +48,7 @@ Rectangle {
         {"type": "notepad", "name": Translation.tr("Notepad"), "icon": "edit_note", "widget": notepadWidget},
         {"type": "calculator", "name": Translation.tr("Calc"), "icon": "calculate", "widget": calculatorWidget},
         {"type": "sysmon", "name": Translation.tr("System"), "icon": "monitor_heart", "widget": sysMonWidget},
+        {"type": "weather", "name": Translation.tr("Weather"), "icon": "light_mode", "widget": weatherWidget},
         {"type": "timer", "name": Translation.tr("Timer"), "icon": "schedule", "widget": pomodoroWidget},
         {"type": "screentime", "name": Translation.tr("Screen Time"), "icon": "av_timer", "widget": screenTimeWidget},
     ]
@@ -92,7 +94,7 @@ Rectangle {
 
     readonly property var enabledWidgets: {
         root.configVersion // Force dependency
-        return Config.options?.sidebar?.right?.enabledWidgets ?? ["calendar", "todo", "notepad", "calculator", "sysmon", "timer"]
+        return Config.options?.sidebar?.right?.enabledWidgets ?? ["calendar", "todo", "notepad", "calculator", "sysmon", "weather", "timer"]
     }
 
     property var tabs: allTabs.filter(tab => {
@@ -497,6 +499,23 @@ Rectangle {
         ScreenTimeWidget {
             anchors.fill: parent
             anchors.margins: 5
+        }
+    }
+
+    // Weather component — reports NO implicit height so it never drives the
+    // shared bottom-group height (which is max() across all tabs). It fills the
+    // group's default height and scrolls its content internally.
+    Component {
+        id: weatherWidget
+        StyledFlickable {
+            anchors.fill: parent
+            anchors.margins: 5
+            contentHeight: weatherDetail.implicitHeight
+            clip: true
+            WeatherDetailWidget {
+                id: weatherDetail
+                width: parent.width
+            }
         }
     }
 }

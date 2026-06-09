@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import qs
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
@@ -14,14 +15,22 @@ MouseArea {
     implicitHeight: Appearance.sizes.barHeight
 
     hoverEnabled: true
+    cursorShape: Qt.PointingHandCursor
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-    onPressed: {
-        Weather.getData();
-        Quickshell.execDetached(["/usr/bin/notify-send", 
-            Translation.tr("Weather"), 
-            Translation.tr("Refreshing (manually triggered)")
-            , "-a", "Shell"
-        ])
+    // Left-click opens the right sidebar's Weather tab; right-click refreshes.
+    onClicked: (mouse) => {
+        if (mouse.button === Qt.RightButton) {
+            Weather.forceRefresh();
+            Quickshell.execDetached(["/usr/bin/notify-send",
+                Translation.tr("Weather"),
+                Translation.tr("Refreshing (manually triggered)")
+                , "-a", "Shell"
+            ])
+            return
+        }
+        GlobalStates.sidebarRightRequestedWidget = "weather"
+        GlobalStates.sidebarRightOpen = true
     }
 
     RowLayout {
