@@ -390,6 +390,15 @@ PanelWindow {
         root.dismiss();
     }
 
+    // Capture the whole screen with the current action (no region drawing).
+    function snipFullscreen() {
+        root.dragStartX = 0;
+        root.dragStartY = 0;
+        root.draggingX = root.screen.width;
+        root.draggingY = root.screen.height;
+        root.snip();
+    }
+
     Process {
         id: snipProc
     }
@@ -602,6 +611,12 @@ PanelWindow {
                             onActionChanged: root.action = action
                             onSelectionModeChanged: root.selectionMode = selectionMode
                             onDismiss: root.dismiss();
+                            onFullscreenRequested: root.snipFullscreen()
+                            onColorPickerRequested: {
+                                // Dismiss first so hyprpicker grabs the live desktop, not this overlay.
+                                root.dismiss();
+                                Quickshell.execDetached(["/usr/bin/bash", "-c", "sleep 0.3; /usr/bin/hyprpicker -a"]);
+                            }
                         }
                         Item {
                             anchors.verticalCenter: parent.verticalCenter
@@ -637,6 +652,11 @@ PanelWindow {
                         onActionChanged: root.action = action
                         onSelectionModeChanged: root.selectionMode = selectionMode
                         onDismiss: root.dismiss()
+                        onFullscreenRequested: root.snipFullscreen()
+                        onColorPickerRequested: {
+                            root.dismiss();
+                            Quickshell.execDetached(["/usr/bin/bash", "-c", "sleep 0.3; /usr/bin/hyprpicker -a"]);
+                        }
                     }
                 }
             }

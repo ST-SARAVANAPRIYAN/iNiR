@@ -55,6 +55,8 @@ binds {
     Mod+Shift+S { spawn "inir" "region" "screenshot"; }
     Mod+Shift+X { spawn "inir" "region" "ocr"; }
     Mod+Shift+A { spawn "inir" "region" "search"; }
+    // Unified snip menu (pick action/scope from the in-overlay toolbar).
+    Ctrl+Shift+S { spawn "inir" "region" "menu"; }
 
     // Wallpaper picker, settings, cheatsheet, panel family switch.
     Ctrl+Alt+T { spawn "inir" "wallpaperSelector" "toggle"; }
