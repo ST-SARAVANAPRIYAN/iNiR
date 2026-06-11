@@ -682,6 +682,7 @@
                 "weather"
             ],
             "spacerWidth": 0,
+            "spacerMode": "auto",
             "migrated": true
         },
         "resources": {

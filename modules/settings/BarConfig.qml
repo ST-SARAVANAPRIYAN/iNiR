@@ -665,6 +665,16 @@ ContentPage {
                 }
             }
 
+            ConfigSelectionArray {
+                currentValue: Config.options?.bar?.layout?.spacerMode ?? "auto"
+                onSelected: (newValue) => Config.setNestedValue("bar.layout.spacerMode", newValue)
+                options: [
+                    { displayName: Translation.tr("Smart"), icon: "auto_awesome", value: "auto" },
+                    { displayName: Translation.tr("Always elastic"), icon: "width_full", value: "fill" },
+                    { displayName: Translation.tr("Fixed width"), icon: "width_normal", value: "fixed" }
+                ]
+            }
+
             BarModuleOrderEditor {}
         }
     }

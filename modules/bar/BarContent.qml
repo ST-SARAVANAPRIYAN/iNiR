@@ -228,8 +228,16 @@ Item { // Bar content region
     // activeWindow/taskbar fill the edge section; resources fills only on the
     // tightest screens. Centre pills size tightly to content, so clock/media do
     // NOT fill — they sit at natural width with no leftover space.
+    readonly property string _spacerMode: Config.options?.bar?.layout?.spacerMode ?? "auto"
     function _fillWidth(id, zone) {
-        if (id === "spacer") return true
+        if (id === "spacer") {
+            // "auto": only stretch where the layout actually has slack (edge
+            // zones); inside content-sized centre pills a greedy spacer fights
+            // the pill sizing and breaks the look — fall back to a fixed gap.
+            if (root._spacerMode === "fixed") return false
+            if (root._spacerMode === "fill") return true
+            return root._fillSlot(zone)
+        }
         if (id === "activeWindow") return root._fillSlot(zone)
         if (id === "resources") return root.useShortenedForm === 2
         return false
@@ -811,7 +819,9 @@ Item { // Bar content region
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumWidth: root._spacerMinimumWidth
-            implicitWidth: root._spacerMinimumWidth
+            // When the spacer is a fixed gap (no fill slack), an unset width
+            // would make it invisible — keep a sensible minimum gap.
+            implicitWidth: Math.max(root._spacerMinimumWidth, 12)
             Behavior on implicitWidth {
                 enabled: Appearance.animationsEnabled
                 NumberAnimation {
