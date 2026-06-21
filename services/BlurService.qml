@@ -54,6 +54,10 @@ Singleton {
         root._runNext();
     }
 
+    function queueSync() {
+        syncDebounceTimer.restart();
+    }
+
     function triggerSync() {
         if (!root.ready) return;
 
@@ -107,7 +111,7 @@ Singleton {
         }
         onLoaded: {
             root.ready = true
-            Qt.callLater(root.triggerSync)
+            root.queueSync()
         }
         onLoadFailed: error => {
             if (error == FileViewError.FileNotFound) {
@@ -117,7 +121,7 @@ Singleton {
                 blurFileView.writeAdapter()
             }
             root.ready = true
-            Qt.callLater(root.triggerSync)
+            root.queueSync()
         }
 
         JsonAdapter {
@@ -138,21 +142,21 @@ Singleton {
             property real layer_opacity: 0.85
             property bool refresh_rate_efficiency: false
 
-            onModeChanged: Qt.callLater(root.triggerSync)
-            onActive_opacityChanged: Qt.callLater(root.triggerSync)
-            onInactive_opacityChanged: Qt.callLater(root.triggerSync)
-            onBlur_enabledChanged: Qt.callLater(root.triggerSync)
-            onXrayChanged: Qt.callLater(root.triggerSync)
-            onPassesChanged: Qt.callLater(root.triggerSync)
-            onOffsetChanged: Qt.callLater(root.triggerSync)
-            onNoiseChanged: Qt.callLater(root.triggerSync)
-            onSaturationChanged: Qt.callLater(root.triggerSync)
-            onWindow_rules_enabledChanged: Qt.callLater(root.triggerSync)
-            onWindow_matcherChanged: Qt.callLater(root.triggerSync)
-            onLayer_rules_enabledChanged: Qt.callLater(root.triggerSync)
-            onLayer_namespaceChanged: Qt.callLater(root.triggerSync)
-            onLayer_opacityChanged: Qt.callLater(root.triggerSync)
-            onRefresh_rate_efficiencyChanged: Qt.callLater(root.triggerSync)
+            onModeChanged: root.queueSync()
+            onActive_opacityChanged: root.queueSync()
+            onInactive_opacityChanged: root.queueSync()
+            onBlur_enabledChanged: root.queueSync()
+            onXrayChanged: root.queueSync()
+            onPassesChanged: root.queueSync()
+            onOffsetChanged: root.queueSync()
+            onNoiseChanged: root.queueSync()
+            onSaturationChanged: root.queueSync()
+            onWindow_rules_enabledChanged: root.queueSync()
+            onWindow_matcherChanged: root.queueSync()
+            onLayer_rules_enabledChanged: root.queueSync()
+            onLayer_namespaceChanged: root.queueSync()
+            onLayer_opacityChanged: root.queueSync()
+            onRefresh_rate_efficiencyChanged: root.queueSync()
         }
     }
 
@@ -170,13 +174,20 @@ Singleton {
         onTriggered: blurFileView.writeAdapter()
     }
 
+    Timer {
+        id: syncDebounceTimer
+        interval: 200
+        repeat: false
+        onTriggered: root.triggerSync()
+    }
+
     // Monitor Battery.isPluggedIn so that if mode is "auto" or refresh_rate_efficiency is enabled, we trigger sync
     // immediately when power status changes (plugged in / unplugged)!
     Connections {
         target: Battery
         function onIsPluggedInChanged() {
             if (root.options.mode === "auto" || root.options.refresh_rate_efficiency) {
-                Qt.callLater(root.triggerSync);
+                root.queueSync();
             }
         }
     }
