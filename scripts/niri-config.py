@@ -2649,7 +2649,10 @@ BLUR_LAYER_RULES_END = "// ii-managed-blur-layer-rules:end"
 
 def _format_float(value, digits=2):
     text = f"{float(value):.{digits}f}"
-    return text.rstrip("0").rstrip(".") if "." in text else text
+    formatted = text.rstrip("0")
+    if formatted.endswith("."):
+        formatted += "0"
+    return formatted
 
 
 def _kdl_escape_string(value: str) -> str:
