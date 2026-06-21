@@ -2291,6 +2291,10 @@ ContentPage {
                             Layout.preferredWidth: 35
                             horizontalAlignment: Text.AlignRight
                         }
+                    }
+                }
+            }
+
             ContentSubsection {
                 title: Translation.tr("Layer Blur")
                 visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
