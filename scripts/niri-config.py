@@ -2730,7 +2730,7 @@ def _parse_blur_settings():
         "refresh_rate_efficiency": False,
         "window_blur": True,
         "layer_blur": True,
-        "active_opacity": 0.95,
+        "active_opacity": 1.0,
         "inactive_opacity": 0.70,
         "layer_opacity": 0.85,
         "blur_passes": 3,

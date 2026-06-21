@@ -2116,41 +2116,7 @@ ContentPage {
                 }
             }
 
-            SettingsDivider {}
 
-            ContentSubsection {
-                title: Translation.tr("Global inactive window opacity")
-                tooltip: Translation.tr("Transparency of unfocused windows before any app-specific blur rule overrides (1.0 = fully opaque)")
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    StyledSlider {
-                        id: inactiveOpacitySlider
-                        Layout.fillWidth: true
-                        from: 0
-                        to: 100
-                        value: Math.round((root.windowRulesData?.inactive_opacity ?? 0.9) * 100)
-                        stepSize: 5
-                        configuration: StyledSlider.Configuration.S
-
-                        onMoved: {
-                            if (pressed) return
-                            root.setConfig("window-rules", "inactive-opacity", (value / 100.0).toFixed(2))
-                        }
-                    }
-
-                    StyledText {
-                        text: (inactiveOpacitySlider.value / 100.0).toFixed(2)
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        font.family: Appearance.font.family.monospace
-                        color: Appearance.colors.colSubtext
-                        Layout.preferredWidth: 35
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
-            }
 
             SettingsSwitch {
                 Layout.fillWidth: true
@@ -2168,37 +2134,104 @@ ContentPage {
     SettingsCardSection {
         expanded: false
         icon: "blur_on"
-        title: Translation.tr("Window Blur")
+        title: Translation.tr("Window Blur & Opacity")
 
         SettingsGroup {
             StyledText {
                 Layout.fillWidth: true
-                text: Translation.tr("Blur is managed globally for windows and layer surfaces. Configured values are written directly to your Niri configuration files.")
+                text: Translation.tr("Blur and opacity are managed globally for windows. Configured values are written directly to your Niri configuration files.")
                 color: Appearance.colors.colOnSurfaceVariant
                 font.pixelSize: Appearance.font.pixelSize.small
                 wrapMode: Text.WordWrap
             }
 
             ContentSubsection {
-                title: Translation.tr("Blur Mode")
+                title: Translation.tr("Window Opacity")
 
-                ConfigSelectionArray {
-                    currentValue: root.windowRulesReady ? (root.windowRulesData?.blur_mode ?? "auto") : "auto"
-                    options: [
-                        { displayName: Translation.tr("Always On"), icon: "blur_on", value: "on" },
-                        { displayName: Translation.tr("Always Off"), icon: "blur_off", value: "off" },
-                        { displayName: Translation.tr("Auto (On Charge)"), icon: "blur_circular", value: "auto" }
-                    ]
-                    onSelected: newValue => {
-                        if (root.windowRulesReady)
-                            root.setConfig("window-rules", "blur-mode", newValue);
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Active opacity:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: activeOpacitySlider
+                            Layout.fillWidth: true
+                            from: 10
+                            to: 100
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.active_opacity ?? 1.0) : 1.0) * 100)
+                            stepSize: 5
+                            configuration: StyledSlider.Configuration.S
+
+                            onMoved: {
+                                if (pressed) return
+                                const val = value / 100.0
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.active_opacity ?? 1.0))
+                                    root.setConfig("window-rules", "active-opacity", String(val))
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(activeOpacitySlider.value) + "%"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 35
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Inactive opacity:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: inactiveOpacitySlider
+                            Layout.fillWidth: true
+                            from: 10
+                            to: 100
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.inactive_opacity ?? 0.70) : 0.70) * 100)
+                            stepSize: 5
+                            configuration: StyledSlider.Configuration.S
+
+                            onMoved: {
+                                if (pressed) return
+                                const val = value / 100.0
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.inactive_opacity ?? 0.70))
+                                    root.setConfig("window-rules", "inactive-opacity", String(val))
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(inactiveOpacitySlider.value) + "%"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 35
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
                 }
             }
 
+            SettingsDivider {}
+
             ContentSubsection {
                 title: Translation.tr("Window Blur")
-                visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -2215,91 +2248,30 @@ ContentPage {
                         }
                     }
 
-                    RowLayout {
+                    ContentSubsection {
+                        title: Translation.tr("Blur Mode")
                         Layout.fillWidth: true
-                        spacing: 8
                         visible: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
 
-                        StyledText {
-                            text: Translation.tr("Active opacity:")
-                            font.pixelSize: Appearance.font.pixelSize.smallest
-                            color: Appearance.colors.colSubtext
-                        }
-
-                        StyledSlider {
-                            id: activeBlurOpacitySlider
-                            Layout.fillWidth: true
-                            enabled: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
-                            from: 10
-                            to: 100
-                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.active_opacity ?? 0.95) : 0.95) * 100)
-                            stepSize: 5
-                            configuration: StyledSlider.Configuration.S
-
-                            onMoved: {
-                                if (pressed) return
-                                const val = value / 100.0
-                                if (root.windowRulesReady && val !== (root.windowRulesData?.active_opacity ?? 0.95))
-                                    root.setConfig("window-rules", "active-opacity", String(val))
+                        ConfigSelectionArray {
+                            currentValue: root.windowRulesReady ? (root.windowRulesData?.blur_mode ?? "auto") : "auto"
+                            options: [
+                                { displayName: Translation.tr("Always On"), icon: "blur_on", value: "on" },
+                                { displayName: Translation.tr("Always Off"), icon: "blur_off", value: "off" },
+                                { displayName: Translation.tr("Auto (On Charge)"), icon: "blur_circular", value: "auto" }
+                            ]
+                            onSelected: newValue => {
+                                if (root.windowRulesReady)
+                                    root.setConfig("window-rules", "blur-mode", newValue);
                             }
-                        }
-
-                        StyledText {
-                            text: Math.round(activeBlurOpacitySlider.value) + "%"
-                            font.pixelSize: Appearance.font.pixelSize.smallest
-                            font.family: Appearance.font.family.monospace
-                            color: Appearance.colors.colSubtext
-                            Layout.preferredWidth: 35
-                            horizontalAlignment: Text.AlignRight
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-                        visible: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
-
-                        StyledText {
-                            text: Translation.tr("Inactive opacity:")
-                            font.pixelSize: Appearance.font.pixelSize.smallest
-                            color: Appearance.colors.colSubtext
-                        }
-
-                        StyledSlider {
-                            id: inactiveBlurOpacitySlider
-                            Layout.fillWidth: true
-                            enabled: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
-                            from: 10
-                            to: 100
-                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.inactive_opacity ?? 0.70) : 0.70) * 100)
-                            stepSize: 5
-                            configuration: StyledSlider.Configuration.S
-
-                            onMoved: {
-                                if (pressed) return
-                                const val = value / 100.0
-                                if (root.windowRulesReady && val !== (root.windowRulesData?.inactive_opacity ?? 0.70))
-                                    root.setConfig("window-rules", "inactive-opacity", String(val))
-                            }
-                        }
-
-                        StyledText {
-                            text: Math.round(inactiveBlurOpacitySlider.value) + "%"
-                            font.pixelSize: Appearance.font.pixelSize.smallest
-                            font.family: Appearance.font.family.monospace
-                            color: Appearance.colors.colSubtext
-                            Layout.preferredWidth: 35
-                            horizontalAlignment: Text.AlignRight
                         }
                     }
                 }
             }
 
-
-
             ContentSubsection {
-                title: Translation.tr("Blur Quality")
-                visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
+                title: Translation.tr("Blur Quality & Tweaks")
+                visible: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true) && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
 
                 ColumnLayout {
                     Layout.fillWidth: true
