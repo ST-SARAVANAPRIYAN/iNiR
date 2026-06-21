@@ -16,13 +16,13 @@ Singleton {
         function onIsPluggedInChanged() {
             const isPlugged = !Battery.available || Battery.isPluggedIn;
             const scriptPath = Quickshell.shellPath("scripts/niri-config.py");
-            Process.exec(["python3", scriptPath, "sync-power-state", String(isPlugged)]);
+            Quickshell.execDetached(["python3", scriptPath, "sync-power-state", String(isPlugged)]);
         }
     }
 
     Component.onCompleted: {
         const isPlugged = !Battery.available || Battery.isPluggedIn;
         const scriptPath = Quickshell.shellPath("scripts/niri-config.py");
-        Process.exec(["python3", scriptPath, "sync-power-state", String(isPlugged)]);
+        Quickshell.execDetached(["python3", scriptPath, "sync-power-state", String(isPlugged)]);
     }
 }
