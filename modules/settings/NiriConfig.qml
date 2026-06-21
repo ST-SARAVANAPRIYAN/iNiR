@@ -2291,11 +2291,65 @@ ContentPage {
                             Layout.preferredWidth: 35
                             horizontalAlignment: Text.AlignRight
                         }
+            ContentSubsection {
+                title: Translation.tr("Layer Blur")
+                visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    SettingsSwitch {
+                        Layout.fillWidth: true
+                        buttonIcon: "layers"
+                        text: Translation.tr("Enable layer surface background blur")
+                        checked: root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true)
+                        onCheckedChanged: {
+                            if (root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true) !== checked)
+                                root.setConfig("window-rules", "layer-blur", checked ? "true" : "false");
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        visible: root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true)
+
+                        StyledText {
+                            text: Translation.tr("Layer opacity:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: layerBlurOpacitySlider
+                            Layout.fillWidth: true
+                            enabled: root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true)
+                            from: 10
+                            to: 100
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.layer_opacity ?? 0.85) : 0.85) * 100)
+                            stepSize: 5
+                            configuration: StyledSlider.Configuration.S
+
+                            onMoved: {
+                                if (pressed) return
+                                const val = value / 100.0
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.layer_opacity ?? 0.85))
+                                    root.setConfig("window-rules", "layer-opacity", String(val))
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(layerBlurOpacitySlider.value) + "%"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 35
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
                 }
             }
-
-
 
             ContentSubsection {
                 title: Translation.tr("Blur Quality")
