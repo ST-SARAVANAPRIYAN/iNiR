@@ -1521,13 +1521,31 @@ ContentPage {
                 title: Translation.tr("Refresh rate")
                 visible: root.refreshOptions.length > 1
 
-                StyledComboBox {
-                    id: refreshRateCombo
+                ColumnLayout {
                     Layout.fillWidth: true
-                    enabled: !root.displayControlsLocked
-                    model: root.refreshOptions
-                    textRole: "displayName"
-                    onActivated: root.safeApplyOutput("mode", "mode", `${root.currentResolution}@${model[currentIndex].rateString}`)
+                    spacing: 8
+
+                    StyledComboBox {
+                        id: refreshRateCombo
+                        Layout.fillWidth: true
+                        enabled: !root.displayControlsLocked && !(BlurService.ready && BlurService.options.refresh_rate_efficiency)
+                        model: root.refreshOptions
+                        textRole: "displayName"
+                        onActivated: root.safeApplyOutput("mode", "mode", `${root.currentResolution}@${model[currentIndex].rateString}`)
+                    }
+
+                    SettingsSwitch {
+                        Layout.fillWidth: true
+                        enabled: !root.displayControlsLocked
+                        buttonIcon: "battery_saver"
+                        text: Translation.tr("Auto Refresh Rate Efficiency")
+                        checked: BlurService.ready && BlurService.options.refresh_rate_efficiency
+                        onCheckedChanged: {
+                            if (BlurService.ready && BlurService.options.refresh_rate_efficiency !== checked) {
+                                BlurService.options.refresh_rate_efficiency = checked
+                            }
+                        }
+                    }
                 }
             }
 
@@ -2101,8 +2119,8 @@ ContentPage {
             SettingsDivider {}
 
             ContentSubsection {
-                title: Translation.tr("Inactive window opacity")
-                tooltip: Translation.tr("Transparency of unfocused windows (1.0 = fully opaque)")
+                title: Translation.tr("Global inactive window opacity")
+                tooltip: Translation.tr("Transparency of unfocused windows before any app-specific blur rule overrides (1.0 = fully opaque)")
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -2142,6 +2160,382 @@ ContentPage {
                 onCheckedChanged: {
                     if (!root.windowRulesReady) return
                     root.setConfig("window-rules", "clip-to-geometry", checked ? "true" : "false")
+                }
+            }
+        }
+    }
+
+    SettingsCardSection {
+        expanded: false
+        icon: "blur_on"
+        title: Translation.tr("Window Blur")
+
+        SettingsGroup {
+            StyledText {
+                Layout.fillWidth: true
+                text: Translation.tr("Blur is managed through Niri's global blur block plus dedicated window and layer rules. The blur opacities below only apply to matched app IDs and namespaces, which avoids conflicting with the global inactive-opacity rule above.")
+                color: Appearance.colors.colOnSurfaceVariant
+                font.pixelSize: Appearance.font.pixelSize.small
+                wrapMode: Text.WordWrap
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Blur Mode")
+
+                ConfigSelectionArray {
+                    currentValue: BlurService.ready ? BlurService.options.mode : "auto"
+                    options: [
+                        { displayName: Translation.tr("Always On"), icon: "blur_on", value: "on" },
+                        { displayName: Translation.tr("Always Off"), icon: "blur_off", value: "off" },
+                        { displayName: Translation.tr("Auto (On Charge)"), icon: "blur_circular", value: "auto" }
+                    ]
+                    onSelected: newValue => {
+                        BlurService.options.mode = newValue;
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Managed Window Rules")
+                visible: BlurService.ready && BlurService.options.mode !== "off"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    SettingsSwitch {
+                        Layout.fillWidth: true
+                        buttonIcon: "check_box"
+                        text: Translation.tr("Apply blur to matching windows")
+                        checked: BlurService.ready && BlurService.options.window_rules_enabled
+                        onCheckedChanged: {
+                            if (BlurService.ready)
+                                BlurService.options.window_rules_enabled = checked;
+                        }
+                    }
+
+                    MaterialTextField {
+                        Layout.fillWidth: true
+                        enabled: BlurService.ready && BlurService.options.window_rules_enabled
+                        placeholderText: Translation.tr("Window app-id regex, for example ^(Alacritty|kitty|foot)$")
+                        text: BlurService.ready ? BlurService.options.window_matcher : ""
+                        onEditingFinished: {
+                            if (BlurService.ready)
+                                BlurService.options.window_matcher = text.trim();
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Active opacity:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: activeBlurOpacitySlider
+                            Layout.fillWidth: true
+                            enabled: BlurService.ready && BlurService.options.window_rules_enabled
+                            from: 10
+                            to: 100
+                            value: Math.round((BlurService.ready ? BlurService.options.active_opacity : 0.95) * 100)
+                            stepSize: 5
+                            configuration: StyledSlider.Configuration.S
+
+                            onMoved: {
+                                const val = value / 100.0
+                                if (BlurService.ready && val !== BlurService.options.active_opacity)
+                                    BlurService.options.active_opacity = val
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(activeBlurOpacitySlider.value) + "%"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 35
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Inactive opacity:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: inactiveBlurOpacitySlider
+                            Layout.fillWidth: true
+                            enabled: BlurService.ready && BlurService.options.window_rules_enabled
+                            from: 10
+                            to: 100
+                            value: Math.round((BlurService.ready ? BlurService.options.inactive_opacity : 0.70) * 100)
+                            stepSize: 5
+                            configuration: StyledSlider.Configuration.S
+
+                            onMoved: {
+                                const val = value / 100.0
+                                if (BlurService.ready && val !== BlurService.options.inactive_opacity)
+                                    BlurService.options.inactive_opacity = val
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(inactiveBlurOpacitySlider.value) + "%"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 35
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Managed Layer Rules")
+                visible: BlurService.ready && BlurService.options.mode !== "off"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    SettingsSwitch {
+                        Layout.fillWidth: true
+                        buttonIcon: "layers"
+                        text: Translation.tr("Apply blur to matching layer-shell surfaces")
+                        checked: BlurService.ready && BlurService.options.layer_rules_enabled
+                        onCheckedChanged: {
+                            if (BlurService.ready)
+                                BlurService.options.layer_rules_enabled = checked;
+                        }
+                    }
+
+                    MaterialTextField {
+                        Layout.fillWidth: true
+                        enabled: BlurService.ready && BlurService.options.layer_rules_enabled
+                        placeholderText: Translation.tr("Layer namespace regex, for example ^(launcher|waybar|walker|fuzzel)$")
+                        text: BlurService.ready ? BlurService.options.layer_namespace : ""
+                        onEditingFinished: {
+                            if (BlurService.ready)
+                                BlurService.options.layer_namespace = text.trim();
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Layer opacity:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: layerBlurOpacitySlider
+                            Layout.fillWidth: true
+                            enabled: BlurService.ready && BlurService.options.layer_rules_enabled
+                            from: 10
+                            to: 100
+                            value: Math.round((BlurService.ready ? BlurService.options.layer_opacity : 0.85) * 100)
+                            stepSize: 5
+                            configuration: StyledSlider.Configuration.S
+
+                            onMoved: {
+                                const val = value / 100.0
+                                if (BlurService.ready && val !== BlurService.options.layer_opacity)
+                                    BlurService.options.layer_opacity = val
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(layerBlurOpacitySlider.value) + "%"
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 35
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Blur Quality")
+                visible: BlurService.ready && BlurService.options.mode !== "off"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    SettingsSwitch {
+                        Layout.fillWidth: true
+                        buttonIcon: "visibility"
+                        text: Translation.tr("Enable xray blur for better performance")
+                        checked: BlurService.ready && BlurService.options.xray
+                        onCheckedChanged: {
+                            if (BlurService.ready)
+                                BlurService.options.xray = checked;
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Passes:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: blurPassesSlider
+                            Layout.fillWidth: true
+                            from: 1
+                            to: 6
+                            stepSize: 1
+                            value: BlurService.ready ? BlurService.options.passes : 3
+                            configuration: StyledSlider.Configuration.S
+                            onMoved: {
+                                const val = Math.round(value)
+                                if (BlurService.ready && val !== BlurService.options.passes)
+                                    BlurService.options.passes = val
+                            }
+                        }
+
+                        StyledText {
+                            text: Math.round(blurPassesSlider.value)
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 30
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Offset:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: blurOffsetSlider
+                            Layout.fillWidth: true
+                            from: 100
+                            to: 500
+                            stepSize: 25
+                            value: Math.round((BlurService.ready ? BlurService.options.offset : 3.0) * 100)
+                            configuration: StyledSlider.Configuration.S
+                            onMoved: {
+                                const val = value / 100.0
+                                if (BlurService.ready && val !== BlurService.options.offset)
+                                    BlurService.options.offset = val
+                            }
+                        }
+
+                        StyledText {
+                            text: (blurOffsetSlider.value / 100.0).toFixed(2)
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 40
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Noise:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: blurNoiseSlider
+                            Layout.fillWidth: true
+                            from: 0
+                            to: 100
+                            stepSize: 1
+                            value: Math.round((BlurService.ready ? BlurService.options.noise : 0.02) * 1000)
+                            configuration: StyledSlider.Configuration.S
+                            onMoved: {
+                                const val = value / 1000.0
+                                if (BlurService.ready && val !== BlurService.options.noise)
+                                    BlurService.options.noise = val
+                            }
+                        }
+
+                        StyledText {
+                            text: (blurNoiseSlider.value / 1000.0).toFixed(3)
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 45
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledText {
+                            text: Translation.tr("Saturation:")
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            color: Appearance.colors.colSubtext
+                        }
+
+                        StyledSlider {
+                            id: blurSaturationSlider
+                            Layout.fillWidth: true
+                            from: 50
+                            to: 250
+                            stepSize: 5
+                            value: Math.round((BlurService.ready ? BlurService.options.saturation : 1.5) * 100)
+                            configuration: StyledSlider.Configuration.S
+                            onMoved: {
+                                const val = value / 100.0
+                                if (BlurService.ready && val !== BlurService.options.saturation)
+                                    BlurService.options.saturation = val
+                            }
+                        }
+
+                        StyledText {
+                            text: (blurSaturationSlider.value / 100.0).toFixed(2)
+                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.family: Appearance.font.family.monospace
+                            color: Appearance.colors.colSubtext
+                            Layout.preferredWidth: 40
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Translation.tr("Recommended baseline: passes 3, offset 3.00, noise 0.020, saturation 1.50. Per current Niri guidance, increase offset first, then add passes only if you still want a smoother blur.")
+                        color: Appearance.colors.colOnSurfaceVariant
+                        font.pixelSize: Appearance.font.pixelSize.smallest
+                        wrapMode: Text.WordWrap
+                    }
                 }
             }
         }

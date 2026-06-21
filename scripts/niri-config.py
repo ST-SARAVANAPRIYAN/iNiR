@@ -18,6 +18,7 @@ Commands:
   validate             Validate current Niri config via niri validate
   detect-customizations Report Niri files that differ from shipped iNiR defaults
   set SECTION KEY VAL  Surgical edit of a single config value
+  set-blur-rules JSON  Sync managed blur config/window/layer rules from settings UI
   get-binds            JSON of all keybinds from 70-binds.kdl with categories/metadata
   set-bind KEY ACTION  Add or update a keybind in 70-binds.kdl (surgical edit)
   remove-bind KEY      Comment out a keybind in 70-binds.kdl (surgical edit)
@@ -948,6 +949,8 @@ def cmd_get_window_rules():
         "corner_radius": 16,
         "clip_to_geometry": True,
         "inactive_opacity": 0.9,
+        "active_opacity": 1.0,
+        "blur": True,
     }
 
     if not rules_file.exists():
@@ -979,14 +982,22 @@ def cmd_get_window_rules():
             m = re.search(r"opacity\s+([\d.]+)", block)
             if m:
                 result["inactive_opacity"] = float(m.group(1))
+        # Check if this is the active-opacity rule (has match is-active=true)
+        elif re.search(r"match\s+is-active\s*=\s*true", block):
+            m = re.search(r"opacity\s+([\d.]+)", block)
+            if m:
+                result["active_opacity"] = float(m.group(1))
         else:
-            # General rule — corner radius / clip
+            # General rule — corner radius / clip / blur
             m = re.search(r"geometry-corner-radius\s+(\d+)", block)
             if m:
                 result["corner_radius"] = int(m.group(1))
             m = re.search(r"clip-to-geometry\s+(true|false)", block)
             if m:
                 result["clip_to_geometry"] = m.group(1) == "true"
+            m = re.search(r"background-effect\s*\{[^}]*blur\s+(true|false)", block, re.DOTALL)
+            if m:
+                result["blur"] = m.group(1) == "true"
 
     print(json.dumps(result))
     return 0
@@ -1735,6 +1746,41 @@ def _set_window_rules(config_dir, key, value):
             content = (
                 content.rstrip()
                 + f"\n\nwindow-rule {{\n    match is-active=false\n    opacity {value}\n}}\n"
+            )
+
+    elif key == "active-opacity":
+        # Find the active rule block (has match is-active=true)
+        active_pattern = r"(window-rule\s*\{[^}]*match\s+is-active\s*=\s*true[^}]*)(opacity\s+[\d.]+)"
+        if re.search(active_pattern, content, re.DOTALL):
+            content = re.sub(
+                r"(match\s+is-active\s*=\s*true\s*\n\s*)(opacity\s+)[\d.]+",
+                rf"\g<1>\g<2>{value}",
+                content,
+                count=1,
+            )
+        else:
+            # No active rule exists — append one
+            content = (
+                content.rstrip()
+                + f"\n\nwindow-rule {{\n    match is-active=true\n    opacity {value}\n}}\n"
+            )
+
+    elif key == "blur":
+        # Enable/disable background blur
+        if re.search(r"background-effect\s*\{[^}]*blur\s+(true|false)", content, re.DOTALL):
+            content = re.sub(
+                r"(background-effect\s*\{[^}]*blur\s+)(true|false)",
+                rf"\g<1>{value}",
+                content,
+                count=1,
+            )
+        else:
+            # Insert in first window-rule block
+            content = re.sub(
+                r"(window-rule\s*\{)\s*\n",
+                rf"\g<1>\n    background-effect {{\n        blur {value}\n    }}\n",
+                content,
+                count=1,
             )
 
     elif key == "clip-to-geometry":
@@ -2602,6 +2648,305 @@ def cmd_remove_bind(args):
     return _write_validated(binds_file, new_content)
 
 
+BLUR_WINDOW_RULES_START = "// ii-managed-blur-window-rules:start"
+BLUR_WINDOW_RULES_END = "// ii-managed-blur-window-rules:end"
+BLUR_LAYER_RULES_START = "// ii-managed-blur-layer-rules:start"
+BLUR_LAYER_RULES_END = "// ii-managed-blur-layer-rules:end"
+
+
+def _format_float(value, digits=2):
+    text = f"{float(value):.{digits}f}"
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+def _kdl_escape_string(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _restore_text_file(path: Path, text: str):
+    if text:
+        path.write_text(text)
+    else:
+        path.unlink(missing_ok=True)
+
+
+def _render_background_effect_block(indent, xray, noise, saturation):
+    inner = indent + "    "
+    lines = [
+        f"{indent}background-effect {{",
+        f"{inner}blur true",
+        f"{inner}xray {'true' if xray else 'false'}",
+        f"{inner}noise {_format_float(noise, 3)}",
+        f"{inner}saturation {_format_float(saturation, 2)}",
+        f"{indent}}}",
+    ]
+    return "\n".join(lines)
+
+
+def _replace_managed_region(content, start_marker, end_marker, replacement):
+    region = f"{start_marker}\n{replacement}\n{end_marker}"
+    pattern = rf"{re.escape(start_marker)}.*?{re.escape(end_marker)}"
+    if re.search(pattern, content, re.DOTALL):
+        return re.sub(
+            pattern, lambda _match: region, content, count=1, flags=re.DOTALL
+        )
+
+    if content.strip():
+        return content.rstrip() + "\n\n" + region + "\n"
+    return region + "\n"
+
+
+def _upsert_blur_config(content, blur_enabled, passes, offset, noise, saturation):
+    off_line = "" if blur_enabled else "    off\n"
+    block = (
+        "blur {\n"
+        f"{off_line}"
+        f"    passes {int(passes)}\n"
+        f"    offset {_format_float(offset, 2)}\n"
+        f"    noise {_format_float(noise, 3)}\n"
+        f"    saturation {_format_float(saturation, 2)}\n"
+        "}"
+    )
+
+    bounds = _find_block_bounds(content, "blur", top_level=True)
+    if bounds:
+        start, _, _, end = bounds
+        lead = "\n" if content[start] == "\n" else ""
+        return content[:start] + lead + block + content[end:]
+
+    anchor_match = re.search(r"(?:^|\n)\s*environment\s*\{", content)
+    if anchor_match:
+        insert_at = anchor_match.start()
+        prefix = content[:insert_at].rstrip()
+        suffix = content[insert_at:].lstrip("\n")
+        join = "\n\n" if prefix else ""
+        return f"{prefix}{join}{block}\n\n{suffix}"
+
+    if content.strip():
+        return content.rstrip() + "\n\n" + block + "\n"
+    return block + "\n"
+
+
+def _upsert_window_blur_rules(
+    content,
+    enabled,
+    matcher,
+    active_opacity,
+    inactive_opacity,
+    xray,
+    noise,
+    saturation,
+):
+    if enabled:
+        matcher = _kdl_escape_string(matcher)
+        effect_block = _render_background_effect_block(
+            "    ", xray=xray, noise=noise, saturation=saturation
+        )
+        block = (
+            "window-rule {\n"
+            f'    match app-id="{matcher}"\n'
+            "    match is-active=true\n"
+            f"    opacity {_format_float(active_opacity, 2)}\n"
+            f"{effect_block}\n"
+            "}\n\n"
+            "window-rule {\n"
+            f'    match app-id="{matcher}"\n'
+            "    match is-active=false\n"
+            f"    opacity {_format_float(inactive_opacity, 2)}\n"
+            f"{effect_block}\n"
+            "}"
+        )
+    else:
+        block = "// Managed blur window rules disabled."
+
+    return _replace_managed_region(
+        content, BLUR_WINDOW_RULES_START, BLUR_WINDOW_RULES_END, block
+    )
+
+
+def _upsert_layer_blur_rules(
+    content, enabled, namespace, opacity, xray, noise, saturation
+):
+    if enabled:
+        namespace = _kdl_escape_string(namespace)
+        effect_block = _render_background_effect_block(
+            "    ", xray=xray, noise=noise, saturation=saturation
+        )
+        block = (
+            "layer-rule {\n"
+            f'    match namespace="{namespace}"\n'
+            f"    opacity {_format_float(opacity, 2)}\n"
+            f"{effect_block}\n"
+            "}"
+        )
+    else:
+        block = "// Managed blur layer rules disabled."
+
+    return _replace_managed_region(
+        content, BLUR_LAYER_RULES_START, BLUR_LAYER_RULES_END, block
+    )
+
+
+def cmd_set_blur_rules(args):
+    if len(args) < 1:
+        print(json.dumps({"error": "Usage: set-blur-rules <json_payload>"}))
+        return 1
+
+    try:
+        payload = json.loads(args[0])
+    except json.JSONDecodeError as exc:
+        print(json.dumps({"error": f"Invalid blur payload: {exc}"}))
+        return 1
+
+    blur_mode = str(payload.get("mode", "auto"))
+    blur_enabled = bool(payload.get("blur_enabled", True)) and blur_mode != "off"
+    xray_enabled = bool(payload.get("xray", True))
+    passes = max(1, min(8, int(payload.get("passes", 3))))
+    offset = max(0.5, min(8.0, float(payload.get("offset", 3.0))))
+    noise = max(0.0, min(1.0, float(payload.get("noise", 0.02))))
+    saturation = max(0.0, min(4.0, float(payload.get("saturation", 1.5))))
+
+    window_rules_enabled = bool(payload.get("window_rules_enabled", True))
+    window_matcher = str(payload.get("window_matcher", "")).strip()
+    active_val = max(0.05, min(1.0, float(payload.get("active_opacity", 0.95))))
+    inactive_val = max(0.05, min(1.0, float(payload.get("inactive_opacity", 0.70))))
+
+    layer_rules_enabled = bool(payload.get("layer_rules_enabled", False))
+    layer_namespace = str(payload.get("layer_namespace", "")).strip()
+    layer_opacity = max(0.05, min(1.0, float(payload.get("layer_opacity", 0.85))))
+
+    config_file = get_niri_config_path()
+    rules_file = resolve_niri_section_file("config.d/30-window-rules.kdl")
+    layer_rules_file = resolve_niri_section_file("config.d/80-layer-rules.kdl")
+
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+    rules_file.parent.mkdir(parents=True, exist_ok=True)
+    layer_rules_file.parent.mkdir(parents=True, exist_ok=True)
+
+    unique_files = []
+    originals = {}
+    for path in [config_file, rules_file, layer_rules_file]:
+        if path not in originals:
+            originals[path] = path.read_text() if path.exists() else ""
+            unique_files.append(path)
+
+    updated = dict(originals)
+
+    updated[config_file] = _upsert_blur_config(
+        updated[config_file],
+        blur_enabled=blur_enabled,
+        passes=passes,
+        offset=offset,
+        noise=noise,
+        saturation=saturation,
+    )
+    updated[rules_file] = _upsert_window_blur_rules(
+        updated[rules_file],
+        enabled=blur_enabled and window_rules_enabled and bool(window_matcher),
+        matcher=window_matcher,
+        active_opacity=active_val,
+        inactive_opacity=inactive_val,
+        xray=xray_enabled,
+        noise=noise,
+        saturation=saturation,
+    )
+    updated[layer_rules_file] = _upsert_layer_blur_rules(
+        updated[layer_rules_file],
+        enabled=blur_enabled and layer_rules_enabled and bool(layer_namespace),
+        namespace=layer_namespace,
+        opacity=layer_opacity,
+        xray=xray_enabled,
+        noise=noise,
+        saturation=saturation,
+    )
+
+    try:
+        for path in unique_files:
+            path.write_text(updated[path])
+    except Exception as exc:
+        print(json.dumps({"error": f"Failed to update blur config: {exc}"}))
+        return 1
+
+    valid, err = _validate_config()
+    if not valid:
+        for path in unique_files:
+            _restore_text_file(path, originals[path])
+        print(json.dumps({"success": False, "error": f"Validation failed: {err}"}))
+        return 1
+
+    print(
+        json.dumps(
+            {
+                "success": True,
+                "files": [str(path) for path in unique_files],
+            }
+        )
+    )
+    return 0
+
+
+def cmd_sync_refresh_rate(args):
+    if len(args) < 1:
+        print(json.dumps({"error": "Usage: sync-refresh-rate <is_plugged_in>"}))
+        return 1
+
+    is_plugged = args[0].lower() == "true"
+    stdout, rc = run_niri("-j", "outputs")
+    if rc != 0:
+        print(json.dumps({"error": "Failed to query outputs"}))
+        return 1
+
+    try:
+        outputs_data = json.loads(stdout)
+    except Exception as e:
+        print(json.dumps({"error": f"Failed to parse outputs JSON: {e}"}))
+        return 1
+
+    results = []
+    for output_name, output_info in outputs_data.items():
+        modes = output_info.get("modes", [])
+        curr_idx = output_info.get("current_mode")
+        if curr_idx is None or curr_idx < 0 or curr_idx >= len(modes):
+            continue
+
+        current_mode = modes[curr_idx]
+        target_width = current_mode.get("width")
+        target_height = current_mode.get("height")
+
+        matching_modes = [m for m in modes if m.get("width") == target_width and m.get("height") == target_height]
+        if not matching_modes:
+            continue
+
+        # Sort by refresh_rate ascending
+        matching_modes.sort(key=lambda m: m.get("refresh_rate", 0))
+
+        if is_plugged:
+            target_mode = matching_modes[-1]
+        else:
+            target_mode = matching_modes[0]
+
+        target_rate = target_mode.get("refresh_rate")
+        rate_hz = target_rate / 1000.0
+
+        if current_mode.get("refresh_rate") == target_rate:
+            results.append({"output": output_name, "status": "already_set", "rate": rate_hz})
+            continue
+
+        rate_str = f"{rate_hz:.3f}".rstrip("0").rstrip(".")
+        mode_str = f"{target_width}x{target_height}@{rate_str}"
+
+        out, apply_rc = run_niri("output", output_name, "mode", mode_str)
+        results.append({
+            "output": output_name,
+            "mode": mode_str,
+            "success": apply_rc == 0,
+            "output_msg": out
+        })
+
+    print(json.dumps({"results": results}))
+    return 0
+
+
 # ─── Main ─────────────────────────────────────────────────────────────
 
 
@@ -2610,7 +2955,7 @@ def main():
         print(
             json.dumps(
                 {
-                    "error": "No command. Use: outputs, apply-output, persist-output, get-input, get-layout, get-animations, get-window-rules, list-cursor-themes, validate, detect-customizations, set, get-binds, set-bind, remove-bind"
+                    "error": "No command. Use: outputs, apply-output, persist-output, get-input, get-layout, get-animations, get-window-rules, list-cursor-themes, validate, detect-customizations, set, set-blur-rules, sync-refresh-rate, get-binds, set-bind, remove-bind"
                 }
             )
         )
@@ -2631,6 +2976,8 @@ def main():
         "validate": lambda: cmd_validate(),
         "detect-customizations": lambda: cmd_detect_customizations(),
         "set": lambda: cmd_set(args),
+        "set-blur-rules": lambda: cmd_set_blur_rules(args),
+        "sync-refresh-rate": lambda: cmd_sync_refresh_rate(args),
         "get-binds": lambda: cmd_get_binds(),
         "set-bind": lambda: cmd_set_bind(args),
         "remove-bind": lambda: cmd_remove_bind(args),
