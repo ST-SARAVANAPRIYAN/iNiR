@@ -2924,29 +2924,7 @@ def _write_blur_settings(config_dir, settings):
     else:
         content = ""
 
-    effective_layer_blur_enabled = (
-        settings["layer_blur"]
-        if blur_mode == "on"
-        else (settings["layer_blur"] and is_plugged)
-        if blur_mode == "auto"
-        else False
-    )
-
-    layer_effect_block = (
-        "    background-effect {\n"
-        f"        blur {'true' if effective_layer_blur_enabled else 'false'}\n"
-        f"        xray {'true' if settings['blur_xray'] else 'false'}\n"
-        f"        noise {_format_float(settings['blur_noise'], 3)}\n"
-        f"        saturation {_format_float(settings['blur_saturation'], 2)}\n"
-        "    }"
-    )
-
-    layer_rules_block = (
-        "layer-rule {\n"
-        f"    opacity {_format_float(settings['layer_opacity'], 2)}\n"
-        f"{layer_effect_block}\n"
-        "}"
-    )
+    layer_rules_block = "// Managed blur layer rules disabled."
 
     content = _replace_managed_region(
         content, "// ii-managed-blur-layer-rules:start", "// ii-managed-blur-layer-rules:end", layer_rules_block
