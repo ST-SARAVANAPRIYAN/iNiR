@@ -1528,7 +1528,7 @@ ContentPage {
                     StyledComboBox {
                         id: refreshRateCombo
                         Layout.fillWidth: true
-                        enabled: !root.displayControlsLocked && !(BlurService.ready && BlurService.options.refresh_rate_efficiency)
+                        enabled: !root.displayControlsLocked && !(root.windowRulesReady && root.windowRulesData?.refresh_rate_efficiency)
                         model: root.refreshOptions
                         textRole: "displayName"
                         onActivated: root.safeApplyOutput("mode", "mode", `${root.currentResolution}@${model[currentIndex].rateString}`)
@@ -1539,10 +1539,10 @@ ContentPage {
                         enabled: !root.displayControlsLocked
                         buttonIcon: "battery_saver"
                         text: Translation.tr("Auto Refresh Rate Efficiency")
-                        checked: BlurService.ready && BlurService.options.refresh_rate_efficiency
+                        checked: root.windowRulesData?.refresh_rate_efficiency ?? false
                         onCheckedChanged: {
-                            if (BlurService.ready && BlurService.options.refresh_rate_efficiency !== checked) {
-                                BlurService.options.refresh_rate_efficiency = checked
+                            if (root.windowRulesReady && (root.windowRulesData?.refresh_rate_efficiency ?? false) !== checked) {
+                                root.setConfig("window-rules", "refresh-rate-efficiency", checked ? "true" : "false")
                             }
                         }
                     }
@@ -2173,7 +2173,7 @@ ContentPage {
         SettingsGroup {
             StyledText {
                 Layout.fillWidth: true
-                text: Translation.tr("Blur is managed through Niri's global blur block plus dedicated window and layer rules. The blur opacities below only apply to matched app IDs and namespaces, which avoids conflicting with the global inactive-opacity rule above.")
+                text: Translation.tr("Blur is managed globally for windows and layer surfaces. Configured values are written directly to your Niri configuration files.")
                 color: Appearance.colors.colOnSurfaceVariant
                 font.pixelSize: Appearance.font.pixelSize.small
                 wrapMode: Text.WordWrap
@@ -2183,21 +2183,22 @@ ContentPage {
                 title: Translation.tr("Blur Mode")
 
                 ConfigSelectionArray {
-                    currentValue: BlurService.ready ? BlurService.options.mode : "auto"
+                    currentValue: root.windowRulesReady ? (root.windowRulesData?.blur_mode ?? "auto") : "auto"
                     options: [
                         { displayName: Translation.tr("Always On"), icon: "blur_on", value: "on" },
                         { displayName: Translation.tr("Always Off"), icon: "blur_off", value: "off" },
                         { displayName: Translation.tr("Auto (On Charge)"), icon: "blur_circular", value: "auto" }
                     ]
                     onSelected: newValue => {
-                        BlurService.options.mode = newValue;
+                        if (root.windowRulesReady)
+                            root.setConfig("window-rules", "blur-mode", newValue);
                     }
                 }
             }
 
             ContentSubsection {
-                title: Translation.tr("Managed Window Rules")
-                visible: BlurService.ready && BlurService.options.mode !== "off"
+                title: Translation.tr("Window Blur")
+                visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -2206,28 +2207,18 @@ ContentPage {
                     SettingsSwitch {
                         Layout.fillWidth: true
                         buttonIcon: "check_box"
-                        text: Translation.tr("Apply blur to matching windows")
-                        checked: BlurService.ready && BlurService.options.window_rules_enabled
+                        text: Translation.tr("Enable window background blur")
+                        checked: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
                         onCheckedChanged: {
-                            if (BlurService.ready)
-                                BlurService.options.window_rules_enabled = checked;
-                        }
-                    }
-
-                    MaterialTextField {
-                        Layout.fillWidth: true
-                        enabled: BlurService.ready && BlurService.options.window_rules_enabled
-                        placeholderText: Translation.tr("Window app-id regex, for example ^(Alacritty|kitty|foot)$")
-                        text: BlurService.ready ? BlurService.options.window_matcher : ""
-                        onEditingFinished: {
-                            if (BlurService.ready)
-                                BlurService.options.window_matcher = text.trim();
+                            if (root.windowRulesReady && (root.windowRulesData?.window_blur ?? true) !== checked)
+                                root.setConfig("window-rules", "window-blur", checked ? "true" : "false");
                         }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
+                        visible: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
 
                         StyledText {
                             text: Translation.tr("Active opacity:")
@@ -2238,17 +2229,18 @@ ContentPage {
                         StyledSlider {
                             id: activeBlurOpacitySlider
                             Layout.fillWidth: true
-                            enabled: BlurService.ready && BlurService.options.window_rules_enabled
+                            enabled: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
                             from: 10
                             to: 100
-                            value: Math.round((BlurService.ready ? BlurService.options.active_opacity : 0.95) * 100)
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.active_opacity ?? 0.95) : 0.95) * 100)
                             stepSize: 5
                             configuration: StyledSlider.Configuration.S
 
                             onMoved: {
+                                if (pressed) return
                                 const val = value / 100.0
-                                if (BlurService.ready && val !== BlurService.options.active_opacity)
-                                    BlurService.options.active_opacity = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.active_opacity ?? 0.95))
+                                    root.setConfig("window-rules", "active-opacity", String(val))
                             }
                         }
 
@@ -2265,6 +2257,7 @@ ContentPage {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
+                        visible: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
 
                         StyledText {
                             text: Translation.tr("Inactive opacity:")
@@ -2275,17 +2268,18 @@ ContentPage {
                         StyledSlider {
                             id: inactiveBlurOpacitySlider
                             Layout.fillWidth: true
-                            enabled: BlurService.ready && BlurService.options.window_rules_enabled
+                            enabled: root.windowRulesReady && (root.windowRulesData?.window_blur ?? true)
                             from: 10
                             to: 100
-                            value: Math.round((BlurService.ready ? BlurService.options.inactive_opacity : 0.70) * 100)
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.inactive_opacity ?? 0.70) : 0.70) * 100)
                             stepSize: 5
                             configuration: StyledSlider.Configuration.S
 
                             onMoved: {
+                                if (pressed) return
                                 const val = value / 100.0
-                                if (BlurService.ready && val !== BlurService.options.inactive_opacity)
-                                    BlurService.options.inactive_opacity = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.inactive_opacity ?? 0.70))
+                                    root.setConfig("window-rules", "inactive-opacity", String(val))
                             }
                         }
 
@@ -2302,8 +2296,8 @@ ContentPage {
             }
 
             ContentSubsection {
-                title: Translation.tr("Managed Layer Rules")
-                visible: BlurService.ready && BlurService.options.mode !== "off"
+                title: Translation.tr("Layer Blur")
+                visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -2312,28 +2306,18 @@ ContentPage {
                     SettingsSwitch {
                         Layout.fillWidth: true
                         buttonIcon: "layers"
-                        text: Translation.tr("Apply blur to matching layer-shell surfaces")
-                        checked: BlurService.ready && BlurService.options.layer_rules_enabled
+                        text: Translation.tr("Enable layer surface background blur")
+                        checked: root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true)
                         onCheckedChanged: {
-                            if (BlurService.ready)
-                                BlurService.options.layer_rules_enabled = checked;
-                        }
-                    }
-
-                    MaterialTextField {
-                        Layout.fillWidth: true
-                        enabled: BlurService.ready && BlurService.options.layer_rules_enabled
-                        placeholderText: Translation.tr("Layer namespace regex, for example ^(launcher|waybar|walker|fuzzel)$")
-                        text: BlurService.ready ? BlurService.options.layer_namespace : ""
-                        onEditingFinished: {
-                            if (BlurService.ready)
-                                BlurService.options.layer_namespace = text.trim();
+                            if (root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true) !== checked)
+                                root.setConfig("window-rules", "layer-blur", checked ? "true" : "false");
                         }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
+                        visible: root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true)
 
                         StyledText {
                             text: Translation.tr("Layer opacity:")
@@ -2344,17 +2328,18 @@ ContentPage {
                         StyledSlider {
                             id: layerBlurOpacitySlider
                             Layout.fillWidth: true
-                            enabled: BlurService.ready && BlurService.options.layer_rules_enabled
+                            enabled: root.windowRulesReady && (root.windowRulesData?.layer_blur ?? true)
                             from: 10
                             to: 100
-                            value: Math.round((BlurService.ready ? BlurService.options.layer_opacity : 0.85) * 100)
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.layer_opacity ?? 0.85) : 0.85) * 100)
                             stepSize: 5
                             configuration: StyledSlider.Configuration.S
 
                             onMoved: {
+                                if (pressed) return
                                 const val = value / 100.0
-                                if (BlurService.ready && val !== BlurService.options.layer_opacity)
-                                    BlurService.options.layer_opacity = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.layer_opacity ?? 0.85))
+                                    root.setConfig("window-rules", "layer-opacity", String(val))
                             }
                         }
 
@@ -2372,7 +2357,7 @@ ContentPage {
 
             ContentSubsection {
                 title: Translation.tr("Blur Quality")
-                visible: BlurService.ready && BlurService.options.mode !== "off"
+                visible: root.windowRulesReady && (root.windowRulesData?.blur_mode ?? "auto") !== "off"
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -2382,10 +2367,10 @@ ContentPage {
                         Layout.fillWidth: true
                         buttonIcon: "visibility"
                         text: Translation.tr("Enable xray blur for better performance")
-                        checked: BlurService.ready && BlurService.options.xray
+                        checked: root.windowRulesReady && (root.windowRulesData?.blur_xray ?? true)
                         onCheckedChanged: {
-                            if (BlurService.ready)
-                                BlurService.options.xray = checked;
+                            if (root.windowRulesReady && (root.windowRulesData?.blur_xray ?? true) !== checked)
+                                root.setConfig("window-rules", "blur-xray", checked ? "true" : "false");
                         }
                     }
 
@@ -2403,14 +2388,15 @@ ContentPage {
                             id: blurPassesSlider
                             Layout.fillWidth: true
                             from: 1
-                            to: 6
+                            to: 8
                             stepSize: 1
-                            value: BlurService.ready ? BlurService.options.passes : 3
+                            value: root.windowRulesReady ? (root.windowRulesData?.blur_passes ?? 3) : 3
                             configuration: StyledSlider.Configuration.S
                             onMoved: {
+                                if (pressed) return
                                 const val = Math.round(value)
-                                if (BlurService.ready && val !== BlurService.options.passes)
-                                    BlurService.options.passes = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.blur_passes ?? 3))
+                                    root.setConfig("window-rules", "blur-passes", String(val))
                             }
                         }
 
@@ -2437,15 +2423,16 @@ ContentPage {
                         StyledSlider {
                             id: blurOffsetSlider
                             Layout.fillWidth: true
-                            from: 100
-                            to: 500
+                            from: 50
+                            to: 800
                             stepSize: 25
-                            value: Math.round((BlurService.ready ? BlurService.options.offset : 3.0) * 100)
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.blur_offset ?? 3.0) : 3.0) * 100)
                             configuration: StyledSlider.Configuration.S
                             onMoved: {
+                                if (pressed) return
                                 const val = value / 100.0
-                                if (BlurService.ready && val !== BlurService.options.offset)
-                                    BlurService.options.offset = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.blur_offset ?? 3.0))
+                                    root.setConfig("window-rules", "blur-offset", String(val))
                             }
                         }
 
@@ -2475,12 +2462,13 @@ ContentPage {
                             from: 0
                             to: 100
                             stepSize: 1
-                            value: Math.round((BlurService.ready ? BlurService.options.noise : 0.02) * 1000)
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.blur_noise ?? 0.02) : 0.02) * 1000)
                             configuration: StyledSlider.Configuration.S
                             onMoved: {
+                                if (pressed) return
                                 const val = value / 1000.0
-                                if (BlurService.ready && val !== BlurService.options.noise)
-                                    BlurService.options.noise = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.blur_noise ?? 0.02))
+                                    root.setConfig("window-rules", "blur-noise", String(val))
                             }
                         }
 
@@ -2510,12 +2498,13 @@ ContentPage {
                             from: 50
                             to: 250
                             stepSize: 5
-                            value: Math.round((BlurService.ready ? BlurService.options.saturation : 1.5) * 100)
+                            value: Math.round((root.windowRulesReady ? (root.windowRulesData?.blur_saturation ?? 1.5) : 1.5) * 100)
                             configuration: StyledSlider.Configuration.S
                             onMoved: {
+                                if (pressed) return
                                 const val = value / 100.0
-                                if (BlurService.ready && val !== BlurService.options.saturation)
-                                    BlurService.options.saturation = val
+                                if (root.windowRulesReady && val !== (root.windowRulesData?.blur_saturation ?? 1.5))
+                                    root.setConfig("window-rules", "blur-saturation", String(val))
                             }
                         }
 
