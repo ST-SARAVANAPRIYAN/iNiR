@@ -2745,14 +2745,6 @@ def _upsert_window_blur_rules(
         block = (
             "window-rule {\n"
             f'    match app-id="{matcher}"\n'
-            "    match is-active=true\n"
-            f"    opacity {_format_float(active_opacity, 2)}\n"
-            f"{effect_block}\n"
-            "}\n\n"
-            "window-rule {\n"
-            f'    match app-id="{matcher}"\n'
-            "    match is-active=false\n"
-            f"    opacity {_format_float(inactive_opacity, 2)}\n"
             f"{effect_block}\n"
             "}"
         )
